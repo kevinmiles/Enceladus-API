@@ -1,0 +1,10 @@
+CREATE TABLE user (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  reddit_username TEXT UNIQUE NOT NULL,
+  lang VARCHAR(2) NOT NULL DEFAULT "en",
+  refresh_token TEXT NOT NULL,
+  is_global_admin BOOLEAN NOT NULL DEFAULT FALSE,
+  spacex__is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+  spacex__is_mod BOOLEAN NOT NULL DEFAULT FALSE,
+  spacex__is_slack_member BOOLEAN NOT NULL DEFAULT FALSE
+);
