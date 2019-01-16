@@ -1,5 +1,5 @@
-#![feature(proc_macro_hygiene, decl_macro, concat_idents)]
-#![allow(proc_macro_derive_resolution_fallback)]
+#![feature(proc_macro_hygiene, decl_macro, concat_idents, custom_attribute)]
+#![allow(proc_macro_derive_resolution_fallback, unused_attributes)]
 #![deny(warnings)]
 #![deny(clippy::all)]
 
@@ -19,8 +19,16 @@ mod schema;
 use crate::endpoint::*;
 use rocket_contrib::helmet::SpaceHelmet;
 
+// single point to change if we need to alter the DBMS
+pub type Database = diesel::SqliteConnection;
 #[database("data")]
-pub struct DataDB(diesel::SqliteConnection);
+pub struct DataDB(Database);
+
+macro_rules! all_routes {
+    ($ns:ident) => {
+        routes![$ns::all, $ns::get, $ns::post, $ns::patch, $ns::delete]
+    };
+}
 
 fn main() {
     rocket::ignite()
@@ -29,10 +37,11 @@ fn main() {
         .mount(
             "/v1/user",
             if cfg!(debug_assertions) {
-                routes![user::all, user::get, user::post, user::patch, user::delete]
+                all_routes!(user)
             } else {
                 routes![user::all, user::get]
             },
         )
+        .mount("/v1/preset_event", all_routes!(preset_event))
         .launch();
 }
