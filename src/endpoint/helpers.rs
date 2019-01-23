@@ -32,7 +32,7 @@ macro_rules! created {
     ($x:expr) => {
         $x
             .map(|value| rocket::response::status::Created(
-                uri!(get: value.id).to_string(),
+                rocket::uri!(get: value.id).to_string(),
                 Some(rocket_contrib::json::Json(value))
             ))
             .map_err(crate::endpoint::helpers::error_mapper)

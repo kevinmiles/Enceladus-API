@@ -5,9 +5,12 @@ cache: cargo
 install:
   - rustup component add rustfmt
   - rustup component add clippy
+before_script:
+  - mkdir databases
+  - touch data.db
+  - diesel migration run --database-url databases/data.db
 script:
-  - cargo fmt -- --check
-  - cd macros && cargo fmt -- --check && cd ..
-  - cargo clippy
-  - cargo build
-  - cargo test
+  - ./precommit
+
+notifications:
+  email: false

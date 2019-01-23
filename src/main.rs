@@ -1,14 +1,7 @@
 #![feature(proc_macro_hygiene, decl_macro, concat_idents, custom_attribute)]
 #![allow(proc_macro_derive_resolution_fallback, unused_attributes)]
-#![deny(warnings)]
-#![deny(clippy::all)]
+#![deny(warnings, clippy::all)]
 
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate rocket;
-#[macro_use]
-extern crate rocket_contrib;
 #[macro_use]
 extern crate diesel;
 
@@ -16,8 +9,12 @@ mod controller;
 mod endpoint;
 mod schema;
 
+#[cfg(test)]
+mod tests;
+
 use crate::endpoint::*;
-use rocket_contrib::helmet::SpaceHelmet;
+use rocket::{routes, Rocket};
+use rocket_contrib::{database, helmet::SpaceHelmet};
 
 // single point to change if we need to alter the DBMS
 pub type Database = diesel::SqliteConnection;
@@ -30,7 +27,10 @@ macro_rules! all_routes {
     };
 }
 
-fn main() {
+/// Creates a server,
+/// attaching middleware for security and database access.
+/// Routes are then mounted (some conditionally).
+pub fn server() -> Rocket {
     rocket::ignite()
         .attach(SpaceHelmet::default())
         .attach(DataDB::fairing())
@@ -43,5 +43,9 @@ fn main() {
             },
         )
         .mount("/v1/preset_event", all_routes!(preset_event))
-        .launch();
+}
+
+/// Launch the server.
+fn main() {
+    server().launch();
 }
