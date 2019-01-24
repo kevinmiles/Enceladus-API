@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 /// Type containing all fields for users.
 /// `InsertUser` and `UpdateUser` are automatically derived.
-#[derive(Serialize, Deserialize, Queryable, Clone, InsertStruct, UpdateStruct)]
+#[derive(Serialize, Deserialize, Queryable, InsertStruct, UpdateStruct)]
 #[table_name = "user"]
 #[serde(deny_unknown_fields)]
 pub struct User {

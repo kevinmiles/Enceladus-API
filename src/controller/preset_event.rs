@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 /// Type containing all fields for preset events.
 /// `InsertPresetEvent` and `UpdatePresetEvent` are automatically derived.
-#[derive(Serialize, Deserialize, Queryable, Clone, InsertStruct, UpdateStruct)]
+#[derive(Serialize, Deserialize, Queryable, InsertStruct, UpdateStruct)]
 #[table_name = "preset_event"]
 #[serde(deny_unknown_fields)]
 pub struct PresetEvent {

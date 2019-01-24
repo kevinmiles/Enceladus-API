@@ -16,4 +16,5 @@ macro_rules! find_inserted {
 }
 
 pub mod preset_event;
+pub mod thread;
 pub mod user;

@@ -1,26 +1,35 @@
 [package]
 name = "enceladus-api"
 version = "0.1.0"
+repository = "https://github.com/r-spacex/Enceladus-API-rs"
+license = "Apache-2.0"
 authors = ["Jacob Pratt <the.z.cuber@gmail.com>"]
 edition = "2018"
 build = "build.rs"
 publish = false
 
 [dependencies]
+diesel = "1.4"
+dotenv = "0.13"
+enceladus_macros = { path = "./macros" }
 rocket = "0.4"
 serde = { version = "1.0", features = ["derive"] }
-diesel = "1.4"
-enceladus_macros = { path = "./macros" }
+serde_json = "1.0"
 
 [dependencies.rocket_contrib]
-version = "0.4"
 default-features = false
-features = ["diesel_sqlite_pool", "json", "helmet"]
+features = ["diesel_postgres_pool", "json", "helmet"]
+version = "0.4"
 
 [build-dependencies]
 diesel = "1.4"
 diesel_migrations = "1.4"
+dotenv = "0.13"
 
 [dev-dependencies]
-serde_json = "1.0"
 uuid = { version = "0.7", features = ["v4"] }
+rand = "0.6"
+
+[profile.release]
+incremental = false
+lto = true

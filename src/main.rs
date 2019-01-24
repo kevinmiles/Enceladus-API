@@ -1,5 +1,9 @@
 #![feature(proc_macro_hygiene, decl_macro, concat_idents, custom_attribute)]
-#![allow(proc_macro_derive_resolution_fallback, unused_attributes)]
+#![allow(
+    proc_macro_derive_resolution_fallback,
+    unused_attributes,
+    intra_doc_link_resolution_failure
+)]
 #![deny(warnings, clippy::all)]
 
 #[macro_use]
@@ -13,11 +17,12 @@ mod schema;
 mod tests;
 
 use crate::endpoint::*;
+use dotenv::dotenv;
 use rocket::{routes, Rocket};
 use rocket_contrib::{database, helmet::SpaceHelmet};
 
 // single point to change if we need to alter the DBMS
-pub type Database = diesel::SqliteConnection;
+pub type Database = diesel::PgConnection;
 #[database("data")]
 pub struct DataDB(Database);
 
@@ -31,9 +36,12 @@ macro_rules! all_routes {
 /// attaching middleware for security and database access.
 /// Routes are then mounted (some conditionally).
 pub fn server() -> Rocket {
+    dotenv().ok();
+
     rocket::ignite()
         .attach(SpaceHelmet::default())
         .attach(DataDB::fairing())
+        .mount("/meta", routes![meta::meta])
         .mount(
             "/v1/user",
             if cfg!(debug_assertions) {
@@ -43,6 +51,7 @@ pub fn server() -> Rocket {
             },
         )
         .mount("/v1/preset_event", all_routes!(preset_event))
+        .mount("/v1/thread", all_routes!(thread))
 }
 
 /// Launch the server.

@@ -1,8 +1,0 @@
-[development]
-port = 3000
-
-[production]
-port = 3000
-
-[global.databases]
-data = { url = "databases/data.db" }
