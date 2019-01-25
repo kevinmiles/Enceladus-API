@@ -2,25 +2,16 @@ use crate::{
     schema::preset_event::{self, dsl::*},
     Database,
 };
-use enceladus_macros::{InsertStruct, UpdateStruct};
-use rocket_contrib::databases::diesel::{
-    ExpressionMethods, QueryDsl, QueryResult, Queryable, RunQueryDsl,
-};
-use serde::{Deserialize, Serialize};
+use enceladus_macros::generate_structs;
+use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 
-/// Type containing all fields for preset events.
-/// `InsertPresetEvent` and `UpdatePresetEvent` are automatically derived.
-#[derive(Serialize, Deserialize, Queryable, InsertStruct, UpdateStruct)]
-#[table_name = "preset_event"]
-#[serde(deny_unknown_fields)]
-pub struct PresetEvent {
-    #[no_insert]
-    #[no_update]
-    pub id: i32,
-    #[insert_default]
-    pub holds_clock: bool,
-    pub message: String,
-    pub name: String,
+generate_structs! {
+    PresetEvent("preset_event") {
+        auto id: i32,
+        holds_clock: bool = false,
+        message: String,
+        name: String,
+    }
 }
 
 impl PresetEvent {

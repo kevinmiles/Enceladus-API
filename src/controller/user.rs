@@ -4,35 +4,20 @@ use crate::{
     schema::user::{self, dsl::*},
     Database,
 };
-use enceladus_macros::{InsertStruct, UpdateStruct};
-use rocket_contrib::databases::diesel::{
-    ExpressionMethods, QueryDsl, QueryResult, Queryable, RunQueryDsl,
-};
-use serde::{Deserialize, Serialize};
+use enceladus_macros::generate_structs;
+use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 
-/// Type containing all fields for users.
-/// `InsertUser` and `UpdateUser` are automatically derived.
-#[derive(Serialize, Deserialize, Queryable, InsertStruct, UpdateStruct)]
-#[table_name = "user"]
-#[serde(deny_unknown_fields)]
-pub struct User {
-    #[no_insert]
-    #[no_update]
-    pub id: i32,
-    #[no_update]
-    pub reddit_username: String,
-    #[insert_default = "en"]
-    pub lang: String,
-    #[serde(skip_serializing)]
-    pub refresh_token: String,
-    #[insert_default]
-    pub is_global_admin: bool,
-    #[insert_default]
-    pub spacex__is_admin: bool,
-    #[insert_default]
-    pub spacex__is_mod: bool,
-    #[insert_default]
-    pub spacex__is_slack_member: bool,
+generate_structs! {
+    User("user") {
+        auto id: i32,
+        readonly reddit_username: String,
+        lang: String = "en",
+        private refresh_token: String,
+        is_global_admin: bool = false,
+        spacex__is_admin: bool = false,
+        spacex__is_mod: bool = false,
+        spacex__is_slack_member: bool = false,
+    }
 }
 
 impl User {

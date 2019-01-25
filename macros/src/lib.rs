@@ -1,111 +1,182 @@
 #![feature(proc_macro_hygiene)]
+#![allow(clippy::eval_order_dependence)]
 
 extern crate proc_macro;
-mod helpers;
 
-use crate::helpers::*;
+mod keyword;
+use crate::keyword::{kw, Keyword};
+
 use proc_macro::TokenStream;
-use proc_macro2::{Ident, Span};
+use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, ItemStruct, LitStr};
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use std::iter;
+use syn::{
+    braced, parenthesized,
+    parse::{Parse, ParseStream},
+    parse_macro_input,
+    punctuated::Punctuated,
+    token, Expr, Ident, Result, Token, Type,
+};
 
-#[proc_macro_derive(InsertStruct, attributes(no_insert, table_name, insert_default))]
-pub fn generate_insert_struct(item: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(item as ItemStruct);
-    let (visibility, generics) = (input.vis, input.generics);
-    let ident = Ident::new(&format!("Insert{}", &input.ident), Span::call_site());
-    let table_name = get_attribute_equals(&input.attrs, "table_name");
-
-    let mut generated_functions = vec![];
-
-    let fields: Vec<_> = fields_without_attribute(&input.fields, "no_insert")
-        .iter()
-        .map(
-            |field| match get_attribute_equals(&field.attrs, "insert_default") {
-                None => quote!(#field),
-                Some(default) => {
-                    let field_attrs = &field.attrs;
-                    let field_vis = &field.vis;
-                    let field_ident = &field.ident;
-                    let field_type = &field.ty;
-
-                    match default {
-                        None => quote! {
-                            #(#field_attrs)*
-                            #[serde(default)]
-                            #field_vis #field_ident: #field_type
-                        },
-                        Some(default) => {
-                            let fn_name = Ident::new(
-                                &format!("_ENC_MACRO_DEFAULT_{}", field_ident.as_ref().unwrap()),
-                                Span::call_site(),
-                            );
-                            let fn_name_str = LitStr::new(
-                                &format!("_ENC_MACRO_DEFAULT_{}", field_ident.as_ref().unwrap()),
-                                Span::call_site(),
-                            );
-
-                            let function = quote! {
-                                #[inline(always)]
-                                fn #fn_name() -> #field_type {
-                                    #default.into()
-                                }
-                            };
-
-                            generated_functions.push(function);
-
-                            quote! {
-                                #(#field_attrs)*
-                                #[serde(default = #fn_name_str)]
-                                #field_vis #field_ident: #field_type
-                            }
-                        }
-                    }
-                }
-            },
-        )
-        .collect();
-
-    TokenStream::from(quote! {
-        #(#generated_functions)*
-        #[derive(serde::Deserialize, rocket_contrib::databases::diesel::Insertable)]
-        #[serde(deny_unknown_fields)]
-        #[table_name = #table_name]
-        #visibility struct #generics #ident {
-            #(#fields),*
-        }
-    })
+struct Declaration {
+    name: Ident,
+    _paren: token::Paren,
+    table_name: Punctuated<Expr, Token![,]>,
+    _brace: token::Brace,
+    fields: Punctuated<Field, Token![,]>,
 }
 
-#[proc_macro_derive(UpdateStruct, attributes(no_update, table_name))]
-pub fn generate_update_struct(item: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(item as ItemStruct);
-    let (visibility, generics) = (input.vis, input.generics);
-    let ident = Ident::new(&format!("Update{}", &input.ident), Span::call_site());
-    let table_name = get_attribute_equals(&input.attrs, "table_name");
-    let fields = fields_without_attribute(&input.fields, "no_update");
+impl Parse for Declaration {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let paren_content;
+        let brace_content;
 
-    let fields: Vec<_> = fields
-        .iter()
-        .map(|field| {
-            let field_attrs = &field.attrs;
-            let field_vis = &field.vis;
-            let field_ident = &field.ident;
-            let field_type = &field.ty;
-
-            quote! {
-                #(#field_attrs)*
-                #field_vis #field_ident: Option<#field_type>
-            }
+        Ok(Declaration {
+            name: input.parse()?,
+            _paren: parenthesized!(paren_content in input),
+            table_name: paren_content.parse_terminated(Expr::parse)?,
+            _brace: braced!(brace_content in input),
+            fields: brace_content.parse_terminated(Field::parse)?,
         })
-        .collect();
+    }
+}
+
+struct Field {
+    attribute: Option<Keyword>,
+    name: Ident,
+    _colon: Token![:],
+    typ: Type,
+    default: Option<Expr>,
+}
+
+impl Parse for Field {
+    fn parse(input: ParseStream) -> Result<Self> {
+        Ok(Field {
+            attribute: if input.peek(kw::auto)
+                || input.peek(kw::readonly)
+                || input.peek(kw::private)
+            {
+                Some(input.parse()?)
+            } else {
+                None
+            },
+            name: input.parse()?,
+            _colon: input.parse()?,
+            typ: input.parse()?,
+            default: if input.peek(Token![=]) {
+                // throw away the `=` token
+                input.parse::<Token![=]>()?;
+                Some(input.parse()?)
+            } else {
+                None
+            },
+        })
+    }
+}
+
+#[proc_macro]
+pub fn generate_structs(item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as Declaration);
+
+    let name = input.name;
+    let insert_name = Ident::new(&format!("Insert{}", name), name.span());
+    let update_name = Ident::new(&format!("Update{}", name), name.span());
+    let table = input.table_name;
+
+    let mut general_fields = vec![];
+    let mut insert_fields = vec![];
+    let mut update_fields = vec![];
+    let mut generated_fns = vec![];
+
+    for field in input.fields {
+        let attribute = field.attribute;
+        let name = field.name;
+        let typ = field.typ;
+        let default = field.default;
+
+        // may or may not need this in any given iteration
+        let fn_name: String = {
+            let mut rng = thread_rng();
+            let rand_value: String = iter::repeat(())
+                .map(|_| rng.sample(Alphanumeric))
+                .take(20)
+                .collect();
+
+            // prefix with an underscore the prevent an identifier with an initial numeric
+            format!("_{}", rand_value)
+        };
+        let fn_name_ident = Ident::new(&fn_name, Span::call_site());
+
+        // set attributes indicating what actions are performed for a given field
+        let mut insertable = true;
+        let mut updateable = true;
+        let mut serializable = true;
+        match attribute {
+            Some(Keyword::Auto) => {
+                insertable = false;
+                updateable = false;
+            }
+            Some(Keyword::Readonly) => updateable = false,
+            Some(Keyword::Private) => serializable = false,
+            None => {}
+        };
+
+        // add the field to the general struct,
+        // skipping serialization if private
+        general_fields.push(if serializable {
+            quote!(pub #name: #typ)
+        } else {
+            quote!(#[serde(skip_serializing)] pub #name: #typ)
+        });
+
+        // add the field to the insertables,
+        // with an optional default
+        if insertable {
+            insert_fields.push(match default {
+                Some(_) => quote!(#[serde(default = #fn_name)] pub #name: #typ),
+                None => quote!(pub #name: #typ),
+            });
+        }
+
+        // add the field to the updateables
+        if updateable {
+            update_fields.push(quote!(pub #name: Option<#typ>));
+        }
+
+        // create the function containing our default value
+        if let Some(default) = default {
+            generated_fns.push(quote! {
+                #[inline(always)]
+                fn #fn_name_ident() -> #typ {
+                    #default.into()
+                }
+            });
+        }
+    }
 
     TokenStream::from(quote! {
-        #[derive(serde::Deserialize, rocket_contrib::databases::diesel::AsChangeset)]
+        #(#generated_fns)*
+
+        #[derive(serde::Serialize, serde::Deserialize, rocket_contrib::databases::diesel::Queryable)]
+        #[table_name = #table]
         #[serde(deny_unknown_fields)]
-        #[table_name = #table_name]
-        #visibility struct #generics #ident {
-            #(#fields),*
+        pub struct #name {
+            #(#general_fields),*
+        }
+
+        #[derive(serde::Deserialize, rocket_contrib::databases::diesel::Insertable)]
+        #[table_name = #table]
+        #[serde(deny_unknown_fields)]
+        pub struct #insert_name {
+            #(#insert_fields),*
+        }
+
+        #[derive(serde::Deserialize, rocket_contrib::databases::diesel::AsChangeset)]
+        #[table_name = #table]
+        #[serde(deny_unknown_fields)]
+        pub struct #update_name {
+            #(#update_fields),*
         }
     })
 }
