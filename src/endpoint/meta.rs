@@ -1,7 +1,8 @@
+use rocket::get;
 use serde_json::json;
 
 #[inline]
-#[rocket::get("/")]
+#[get("/")]
 pub fn meta() -> String {
     json!({
         "version": env!("CARGO_PKG_VERSION"),

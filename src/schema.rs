@@ -8,6 +8,17 @@ table! {
 }
 
 table! {
+    section (id) {
+        id -> Int4,
+        is_events_section -> Bool,
+        name -> Varchar,
+        content -> Text,
+        lock_held_by_user_id -> Nullable<Int4>,
+        in_thread_id -> Int4,
+    }
+}
+
+table! {
     thread (id) {
         id -> Int4,
         thread_name -> Varchar,
@@ -38,6 +49,7 @@ table! {
 
 allow_tables_to_appear_in_same_query!(
     preset_event,
+    section,
     thread,
     user,
 );

@@ -52,6 +52,7 @@ pub fn server() -> Rocket {
         )
         .mount("/v1/preset_event", all_routes!(preset_event))
         .mount("/v1/thread", all_routes!(thread))
+        .mount("/v1/section", all_routes!(section))
 }
 
 /// Launch the server.
