@@ -29,10 +29,7 @@ impl Section {
 
     #[inline]
     pub fn create(conn: &Database, data: &InsertSection) -> QueryResult<Section> {
-        diesel::insert_into(section)
-            .values(data)
-            .execute(conn)
-            .map(|_| find_inserted!(section, conn))
+        diesel::insert_into(section).values(data).get_result(conn)
     }
 
     #[inline]
@@ -40,8 +37,7 @@ impl Section {
         diesel::update(section)
             .filter(id.eq(section_id))
             .set(data)
-            .execute(conn)
-            .map(|_| Section::find_id(conn, section_id).unwrap())
+            .get_result(conn)
     }
 
     #[inline]

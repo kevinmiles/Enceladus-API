@@ -44,9 +44,7 @@ Tests on each endpoint are located in the `src/tests` directory.
 As of present, unit tests have not been created,
 and may not in the future.
 
-To run all tests, run `cargo test -- --test-threads=1`.
-The flag is necessary to ensure correctness in certain responses.
-In the future, it will not be necessary.
+To run all tests, run `cargo test`.
 
 ## Commits
 

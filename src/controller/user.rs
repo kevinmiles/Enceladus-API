@@ -37,10 +37,7 @@ impl User {
     /// Returns the inserted row.
     #[inline]
     pub fn create(conn: &Database, data: &InsertUser) -> QueryResult<User> {
-        diesel::insert_into(user)
-            .values(data)
-            .execute(conn)
-            .map(|_| find_inserted!(user, conn))
+        diesel::insert_into(user).values(data).get_result(conn)
     }
 
     /// Update a `User` given an ID and the data to update.
@@ -50,8 +47,7 @@ impl User {
         diesel::update(user)
             .filter(id.eq(user_id))
             .set(data)
-            .execute(conn)
-            .map(|_| User::find_id(conn, user_id).unwrap())
+            .get_result(conn)
     }
 
     /// Delete a `PresetEvent` given its ID.

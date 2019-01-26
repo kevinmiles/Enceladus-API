@@ -29,10 +29,7 @@ impl Event {
 
     #[inline]
     pub fn create(conn: &Database, data: &InsertEvent) -> QueryResult<Event> {
-        diesel::insert_into(event)
-            .values(data)
-            .execute(conn)
-            .map(|_| find_inserted!(event, conn))
+        diesel::insert_into(event).values(data).get_result(conn)
     }
 
     #[inline]
@@ -40,8 +37,7 @@ impl Event {
         diesel::update(event)
             .filter(id.eq(event_id))
             .set(data)
-            .execute(conn)
-            .map(|_| Event::find_id(conn, event_id).unwrap())
+            .get_result(conn)
     }
 
     #[inline]

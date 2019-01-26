@@ -33,8 +33,7 @@ impl PresetEvent {
     pub fn create(conn: &Database, data: &InsertPresetEvent) -> QueryResult<PresetEvent> {
         diesel::insert_into(preset_event)
             .values(data)
-            .execute(conn)
-            .map(|_| find_inserted!(preset_event, conn))
+            .get_result(conn)
     }
 
     /// Update a `PresetEvent` given an ID and the data to update.
@@ -48,8 +47,7 @@ impl PresetEvent {
         diesel::update(preset_event)
             .filter(id.eq(preset_event_id))
             .set(data)
-            .execute(conn)
-            .map(|_| PresetEvent::find_id(conn, preset_event_id).unwrap())
+            .get_result(conn)
     }
 
     /// Delete a `PresetEvent` given its ID.

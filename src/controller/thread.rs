@@ -63,8 +63,7 @@ impl Thread {
 
         diesel::insert_into(thread)
             .values(insertable_thread)
-            .execute(conn)
-            .map(|_| find_inserted!(thread, conn))
+            .get_result(conn)
     }
 
     #[inline]
@@ -72,8 +71,7 @@ impl Thread {
         diesel::update(thread)
             .filter(id.eq(thread_id))
             .set(data)
-            .execute(conn)
-            .map(|_| Thread::find_id(conn, thread_id).unwrap())
+            .get_result(conn)
     }
 
     #[inline]
