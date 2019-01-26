@@ -1,4 +1,15 @@
 table! {
+    event (id) {
+        id -> Int4,
+        posted -> Bool,
+        message -> Text,
+        terminal_count -> Varchar,
+        utc -> Int8,
+        in_thread_id -> Int4,
+    }
+}
+
+table! {
     preset_event (id) {
         id -> Int4,
         holds_clock -> Bool,
@@ -48,6 +59,7 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
+    event,
     preset_event,
     section,
     thread,

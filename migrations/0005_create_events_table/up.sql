@@ -1,0 +1,8 @@
+CREATE TABLE event (
+  id SERIAL PRIMARY KEY NOT NULL,
+  posted BOOLEAN NOT NULL DEFAULT false,
+  message TEXT NOT NULL DEFAULT '',
+  terminal_count VARCHAR(255) NOT NULL DEFAULT '',
+  utc BIGINT NOT NULL,
+  in_thread_id INTEGER NOT NULL
+);
