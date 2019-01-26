@@ -1,0 +1,2 @@
+migrations/*/*.sql linguist-language=PLSQL
+src/schema.rs linguist-generated
