@@ -6,7 +6,7 @@ use serde_json::json;
 pub fn meta() -> String {
     json!({
         "version": env!("CARGO_PKG_VERSION"),
-        "version_major": env!("CARGO_PKG_VERSION_MAJOR"),
+        "version_major": env!("CARGO_PKG_VERSION_MAJOR").parse::<u8>().unwrap(),
         "repository": env!("CARGO_PKG_REPOSITORY"),
     })
     .to_string()
