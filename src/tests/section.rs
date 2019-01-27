@@ -1,75 +1,54 @@
 use crate::tests::common::*;
-use rocket::{http::Status, local::Client};
 use serde_json::{json, Value as Json};
 
-macro_rules! url {
-    () => {
-        String::from("/v1/section")
-    };
-
-    ($id:expr) => {
-        format!("{}/{}", url!(), $id)
-    };
-}
+const BASE: &str = "/v1/section";
 
 fn create_section(client: &Client) -> Json {
-    let section = json!({
-        "in_thread_id": 0, // temporary
-    })
-    .to_string();
-
-    let res = client.post(url!()).body(section).dispatch();
-    assert_eq!(res.status(), Status::Created);
-    body(res)
+    client
+        .post(json!({
+            "in_thread_id": 0, // temporary
+        }))
+        .assert_created()
+        .get_body_object()
 }
 
 #[test]
 fn get_all() {
-    let client = client();
-
-    let res = client.get(url!()).dispatch();
-    assert_eq!(res.status(), Status::Ok);
-
-    assert!(body(res).is_array(), "body is array");
+    Client::new(BASE)
+        .get_all()
+        .assert_ok()
+        .assert_body_is_array();
 }
 
 #[test]
 fn get_one() {
-    let client = client();
+    let client = Client::new(BASE);
 
     // setup
     let created_value = create_section(&client);
 
     // test
-    let res = client.get(url!(created_value["id"])).dispatch();
-    assert_eq!(res.status(), Status::Ok);
-
-    let body = body(res);
-    assert!(body.is_object(), "body is object");
+    let body = client
+        .get(&created_value["id"])
+        .assert_ok()
+        .get_body_object();
     assert_eq!(created_value, body);
 
     // teardown
-    client.delete(url!(created_value["id"])).dispatch();
+    client.delete(&created_value["id"]);
 }
 
 #[test]
 fn create() {
-    let client = client();
+    let client = Client::new(BASE);
 
-    let name = uuid();
-    let content = uuid();
     let section = json!({
-        "name": name,
-        "content": content,
+        "name": uuid(),
+        "content": uuid(),
         "in_thread_id": 0, // temporary
-    })
-    .to_string();
+    });
 
-    let res = client.post(url!()).body(section).dispatch();
-    assert_eq!(res.status(), Status::Created);
-
-    let mut body = body(res);
-    assert!(body.is_object(), "body is object");
+    let mut body = client.post(&section).assert_created().get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
 
     // store this so we can perform the teardown
@@ -83,51 +62,44 @@ fn create() {
         json!({
             "id": null,
             "is_events_section": false,
-            "name": name,
-            "content": content,
+            "name": section["name"],
+            "content": section["content"],
             "lock_held_by_user_id": null,
-            "in_thread_id": 0,
+            "in_thread_id": section["in_thread_id"],
         })
     );
 
     // teardown
-    client.delete(url!(id)).dispatch();
+    client.delete(id);
 }
 
 #[test]
 fn update() {
-    let client = client();
+    let client = Client::new(BASE);
 
     // setup
     let created_value = create_section(&client);
     assert_eq!(created_value["name"].as_str(), Some(""));
 
     // test
-    let new_name = uuid();
-    let data = json!({ "name": new_name }).to_string();
-
-    let res = client
-        .patch(url!(created_value["id"]))
-        .body(data)
-        .dispatch();
-    assert_eq!(res.status(), Status::Ok);
-
-    let body = body(res);
-    assert!(body.is_object(), "body is object");
-    assert_eq!(body["name"].as_str(), Some(&*new_name));
+    let data = json!({ "name": uuid() });
+    let body = client
+        .patch(&created_value["id"], &data)
+        .assert_ok()
+        .get_body_object();
+    assert_eq!(body["name"], data["name"]);
 
     // teardown
-    client.delete(url!(created_value["id"])).dispatch();
+    client.delete(&created_value["id"]);
 }
 
 #[test]
 fn delete() {
-    let client = client();
+    let client = Client::new(BASE);
 
     // setup
     let created_value = create_section(&client);
 
     // test
-    let res = client.delete(url!(created_value["id"])).dispatch();
-    assert_eq!(res.status(), Status::NoContent);
+    client.delete(&created_value["id"]).assert_no_content();
 }

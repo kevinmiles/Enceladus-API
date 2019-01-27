@@ -1,19 +1,112 @@
 use crate::server;
-use rocket::local::{Client, LocalResponse};
+use rocket::http::Status;
 use serde_json::Value;
 
-pub fn client() -> Client {
-    Client::new(server()).expect("valid rocket instance")
-}
-
-pub fn parse_json(value: String) -> serde_json::Result<Value> {
-    serde_json::from_str(&value)
-}
-
+#[inline]
 pub fn uuid() -> String {
     uuid::Uuid::new_v4().to_string()
 }
 
-pub fn body(mut res: LocalResponse) -> Value {
-    res.body_string().map(parse_json).unwrap().unwrap() as Value
+pub struct Client<'a> {
+    base: &'a str,
+    client: rocket::local::Client,
+}
+
+impl<'a> Client<'a> {
+    #[inline]
+    pub fn new(base: &'a str) -> Self {
+        Client {
+            base,
+            client: rocket::local::Client::new(server()).expect("invalid rocket instance"),
+        }
+    }
+
+    #[inline]
+    fn url_for(&self, id: impl ToString) -> String {
+        format!("{}/{}", self.base, id.to_string())
+    }
+
+    #[inline]
+    pub fn get_all(&self) -> Response {
+        Response(self.client.get(self.url_for("")).dispatch())
+    }
+
+    #[inline]
+    pub fn get(&self, id: impl ToString) -> Response {
+        Response(self.client.get(self.url_for(id)).dispatch())
+    }
+
+    #[inline]
+    pub fn post(&self, body: impl ToString) -> Response {
+        Response(
+            self.client
+                .post(self.base)
+                .body(body.to_string())
+                .dispatch(),
+        )
+    }
+
+    #[inline]
+    pub fn patch(&self, id: impl ToString, body: impl ToString) -> Response {
+        Response(
+            self.client
+                .patch(self.url_for(id))
+                .body(body.to_string())
+                .dispatch(),
+        )
+    }
+
+    #[inline]
+    pub fn delete(&self, id: impl ToString) -> Response {
+        Response(self.client.delete(self.url_for(id)).dispatch())
+    }
+}
+
+pub struct Response<'a>(rocket::local::LocalResponse<'a>);
+impl Response<'_> {
+    #[inline]
+    fn status(&self) -> Status {
+        self.0.status()
+    }
+
+    #[inline]
+    pub fn assert_ok(self) -> Self {
+        assert_eq!(self.status(), Status::Ok);
+        self
+    }
+
+    #[inline]
+    pub fn assert_created(self) -> Self {
+        assert_eq!(self.status(), Status::Created);
+        self
+    }
+
+    #[inline]
+    pub fn assert_no_content(self) -> Self {
+        assert_eq!(self.status(), Status::NoContent);
+        self
+    }
+
+    #[inline]
+    pub fn assert_body_is_array(mut self) -> Value {
+        let body = self.body();
+        assert!(body.is_array(), "body is array");
+        body
+    }
+
+    #[inline]
+    pub fn get_body_object(mut self) -> Value {
+        let body = self.body();
+        assert!(body.is_object(), "body is object");
+        body
+    }
+
+    #[inline]
+    fn body(&mut self) -> Value {
+        self.0
+            .body_string()
+            .map(|body| serde_json::from_str(&body))
+            .unwrap()
+            .unwrap()
+    }
 }

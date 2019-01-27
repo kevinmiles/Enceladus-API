@@ -1,87 +1,59 @@
 use crate::tests::common::*;
-use rocket::{http::Status, local::Client};
 use serde_json::{json, Value as Json};
 
-macro_rules! url {
-    () => {
-        String::from("/v1/thread")
-    };
-
-    ($id:expr) => {
-        format!("{}/{}", url!(), $id)
-    };
-}
+const BASE: &str = "/v1/thread";
 
 fn create_thread(client: &Client) -> Json {
-    let thread = json!({
-        "thread_name": uuid(),
-        "launch_name": uuid(),
-        "subreddit": uuid(),
-    })
-    .to_string();
-
-    let res = client.post(url!()).body(thread).dispatch();
-    assert_eq!(res.status(), Status::Created);
-    body(res)
+    client
+        .post(json!({
+            "thread_name": uuid(),
+            "launch_name": uuid(),
+            "subreddit": uuid(),
+        }))
+        .assert_created()
+        .get_body_object()
 }
 
 #[test]
 fn get_all() {
-    let client = client();
-
-    let res = client.get(url!()).dispatch();
-    assert_eq!(res.status(), Status::Ok);
-
-    assert!(body(res).is_array(), "body is array");
+    Client::new(BASE)
+        .get_all()
+        .assert_ok()
+        .assert_body_is_array();
 }
 
 #[test]
 fn get_one() {
-    let client = client();
+    let client = Client::new(BASE);
 
     // setup
     let created_value = create_thread(&client);
 
     // test
-    let res = client.get(url!(created_value["id"])).dispatch();
-    assert_eq!(res.status(), Status::Ok);
-
-    let body = body(res);
-    assert!(body.is_object(), "body is object");
+    let body = client
+        .get(&created_value["id"])
+        .assert_ok()
+        .get_body_object();
     assert_eq!(created_value, body);
 
     // teardown
-    client.delete(url!(body["id"])).dispatch();
+    client.delete(&body["id"]);
 }
 
-/// TODO Once authentication is in place,
-/// ensure the authenticated user is the one returned in `created_by_user_id`.
 #[test]
 fn create() {
-    let client = client();
-
-    let thread_name = uuid();
-    let launch_name = uuid();
-    let subreddit = uuid();
-    let t0: i32 = rand::random();
-    let youtube_id = &uuid()[0..11];
-    let api_id = uuid();
+    let client = Client::new(BASE);
 
     let thread = json!({
-        "thread_name": thread_name,
-        "launch_name": launch_name,
-        "subreddit": subreddit,
-        "t0": t0,
-        "youtube_id": youtube_id,
-        "spacex__api_id": api_id,
-    })
-    .to_string();
+        "thread_name": uuid(),
+        "launch_name": uuid(),
+        "subreddit": uuid(),
+        "t0": rand::random::<i64>(),
+        "youtube_id": uuid()[0..11],
+        "spacex__api_id": uuid(),
+    });
 
-    let res = client.post(url!()).body(thread).dispatch();
-    assert_eq!(res.status(), Status::Created);
-
-    let mut body = body(res);
-    assert!(body.is_object(), "body is object");
+    let mut body = client.post(&thread).assert_created().get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
 
     // store this so we can perform the teardown
@@ -102,53 +74,46 @@ fn create() {
             "events_id": [],
 
             // user-provided
-            "thread_name": thread_name,
-            "launch_name": launch_name,
-            "subreddit": subreddit,
-            "t0": t0,
-            "youtube_id": youtube_id,
-            "spacex__api_id": api_id,
+            "thread_name": thread["thread_name"],
+            "launch_name": thread["launch_name"],
+            "subreddit": thread["subreddit"],
+            "t0": thread["t0"],
+            "youtube_id": thread["youtube_id"],
+            "spacex__api_id": thread["spacex__api_id"],
         })
     );
 
     // teardown
-    client.delete(url!(id)).dispatch();
+    client.delete(id);
 }
 
 #[test]
 fn update() {
-    let client = client();
+    let client = Client::new(BASE);
 
     // setup
     let created_value = create_thread(&client);
     assert_eq!(created_value["spacex__api_id"].as_str(), None);
 
     // test
-    let val = uuid();
-    let data = json!({ "spacex__api_id": val }).to_string();
-
-    let res = client
-        .patch(url!(created_value["id"]))
-        .body(data)
-        .dispatch();
-    assert_eq!(res.status(), Status::Ok);
-
-    let body = body(res);
-    assert!(body.is_object(), "body is object");
-    assert_eq!(body["spacex__api_id"].as_str(), Some(&*val));
+    let data = json!({ "spacex__api_id": uuid() });
+    let body = client
+        .patch(&created_value["id"], &data)
+        .assert_ok()
+        .get_body_object();
+    assert_eq!(body["spacex__api_id"], data["spacex__api_id"]);
 
     // teardown
-    client.delete(url!(created_value["id"])).dispatch();
+    client.delete(&created_value["id"]);
 }
 
 #[test]
 fn delete() {
-    let client = client();
+    let client = Client::new(BASE);
 
     // setup
     let created_value = create_thread(&client);
 
     // test
-    let res = client.delete(url!(created_value["id"])).dispatch();
-    assert_eq!(res.status(), Status::NoContent);
+    client.delete(&created_value["id"]).assert_no_content();
 }

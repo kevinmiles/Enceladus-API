@@ -1,11 +1,8 @@
 use crate::tests::common::*;
-use rocket::http::Status;
+
+const BASE: &str = "/meta";
 
 #[test]
 fn get() {
-    let client = client();
-
-    let res = client.get("/meta").dispatch();
-    assert_eq!(res.status(), Status::Ok);
-    assert!(body(res).is_object(), "body is object");
+    Client::new(BASE).get_all().assert_ok().get_body_object();
 }

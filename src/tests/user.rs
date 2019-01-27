@@ -1,74 +1,54 @@
 use crate::tests::common::*;
-use rocket::{http::Status, local::Client};
 use serde_json::{json, Value as Json};
 
-macro_rules! url {
-    () => {
-        String::from("/v1/user")
-    };
-
-    ($id:expr) => {
-        format!("{}/{}", url!(), $id)
-    };
-}
+const BASE: &str = "/v1/user";
 
 fn create_user(client: &Client) -> Json {
-    let user = json!({
-        "reddit_username": uuid(),
-        "refresh_token": uuid(),
-    })
-    .to_string();
-
-    let res = client.post(url!()).body(user).dispatch();
-    assert_eq!(res.status(), Status::Created);
-    body(res)
+    client
+        .post(json!({
+            "reddit_username": uuid(),
+            "refresh_token": uuid(),
+        }))
+        .assert_created()
+        .get_body_object()
 }
 
 #[test]
 fn get_all() {
-    let client = client();
-
-    let res = client.get(url!()).dispatch();
-    assert_eq!(res.status(), Status::Ok);
-
-    assert!(body(res).is_array(), "body is array");
+    Client::new(BASE)
+        .get_all()
+        .assert_ok()
+        .assert_body_is_array();
 }
 
 #[test]
 fn get_one() {
-    let client = client();
+    let client = Client::new(BASE);
 
     // setup
     let created_value = create_user(&client);
 
     // test
-    let res = client.get(url!(created_value["id"])).dispatch();
-    assert_eq!(res.status(), Status::Ok);
-
-    let body = body(res);
-    assert!(body.is_object(), "body is object");
+    let body = client
+        .get(&created_value["id"])
+        .assert_ok()
+        .get_body_object();
     assert_eq!(created_value, body);
 
     // teardown
-    client.delete(url!(created_value["id"])).dispatch();
+    client.delete(&created_value["id"]);
 }
 
 #[test]
 fn create() {
-    let client = client();
+    let client = Client::new(BASE);
 
-    let reddit_username = uuid();
     let user = json!({
-        "reddit_username": reddit_username,
+        "reddit_username": uuid(),
         "refresh_token": uuid(),
-    })
-    .to_string();
+    });
 
-    let res = client.post(url!()).body(user).dispatch();
-    assert_eq!(res.status(), Status::Created);
-
-    let mut body = body(res);
-    assert!(body.is_object(), "body is object");
+    let mut body = client.post(&user).assert_created().get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
     assert_eq!(body.get("refresh_token"), None);
 
@@ -82,7 +62,7 @@ fn create() {
         body,
         json!({
             "id": null,
-            "reddit_username": reddit_username,
+            "reddit_username": user["reddit_username"],
             "lang": "en",
             "is_global_admin": false,
             "spacex__is_admin": false,
@@ -92,12 +72,12 @@ fn create() {
     );
 
     // teardown
-    client.delete(url!(id)).dispatch();
+    client.delete(id);
 }
 
 #[test]
 fn update() {
-    let client = client();
+    let client = Client::new(BASE);
 
     // setup
     let created_value = create_user(&client);
@@ -107,30 +87,27 @@ fn update() {
     );
 
     // test
-    let data = json!({ "spacex__is_slack_member": true }).to_string();
-
-    let res = client
-        .patch(url!(created_value["id"]))
-        .body(data)
-        .dispatch();
-    assert_eq!(res.status(), Status::Ok);
-
-    let body = body(res);
-    assert!(body.is_object(), "body is object");
-    assert_eq!(body["spacex__is_slack_member"].as_bool(), Some(true));
+    let data = json!({ "spacex__is_slack_member": true });
+    let body = client
+        .patch(&created_value["id"], &data)
+        .assert_ok()
+        .get_body_object();
+    assert_eq!(
+        body["spacex__is_slack_member"],
+        data["spacex__is_slack_member"]
+    );
 
     // teardown
-    client.delete(url!(created_value["id"])).dispatch();
+    client.delete(&created_value["id"]);
 }
 
 #[test]
 fn delete() {
-    let client = client();
+    let client = Client::new(BASE);
 
     // setup
     let created_value = create_user(&client);
 
     // test
-    let res = client.delete(url!(created_value["id"])).dispatch();
-    assert_eq!(res.status(), Status::NoContent);
+    client.delete(&created_value["id"]).assert_no_content();
 }
