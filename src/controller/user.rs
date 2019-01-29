@@ -5,7 +5,14 @@ use crate::{
     Database,
 };
 use enceladus_macros::generate_structs;
+use hashbrown::HashMap;
+use lazy_static::lazy_static;
+use parking_lot::RwLock;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+
+lazy_static! {
+    static ref CACHE: RwLock<HashMap<i32, User>> = RwLock::new(HashMap::new());
+}
 
 generate_structs! {
     User("user") {
@@ -30,30 +37,42 @@ impl User {
     /// Find a specific `User` given its ID.
     #[inline]
     pub fn find_id(conn: &Database, user_id: i32) -> QueryResult<User> {
-        user.find(user_id).first(conn)
+        let cache = CACHE.read();
+        if cache.contains_key(&user_id) {
+            Ok(cache[&user_id].clone())
+        } else {
+            let result: User = user.find(user_id).first(conn)?;
+            CACHE.write().insert(user_id, result.clone());
+            Ok(result)
+        }
     }
 
     /// Create a `User` given the data.
     /// Returns the inserted row.
     #[inline]
     pub fn create(conn: &Database, data: &InsertUser) -> QueryResult<User> {
-        diesel::insert_into(user).values(data).get_result(conn)
+        let result: User = diesel::insert_into(user).values(data).get_result(conn)?;
+        CACHE.write().insert(result.id, result.clone());
+        Ok(result)
     }
 
     /// Update a `User` given an ID and the data to update.
     /// Returns the full row.
     #[inline]
     pub fn update(conn: &Database, user_id: i32, data: &UpdateUser) -> QueryResult<User> {
-        diesel::update(user)
+        let result: User = diesel::update(user)
             .filter(id.eq(user_id))
             .set(data)
-            .get_result(conn)
+            .get_result(conn)?;
+        CACHE.write().insert(result.id, result.clone());
+        Ok(result)
     }
 
     /// Delete a `PresetEvent` given its ID.
     /// Returns the number of rows deleted (should be `1`).
     #[inline]
     pub fn delete(conn: &Database, user_id: i32) -> QueryResult<usize> {
+        CACHE.write().remove(&user_id);
         diesel::delete(user).filter(id.eq(user_id)).execute(conn)
     }
 }

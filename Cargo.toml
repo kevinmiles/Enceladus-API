@@ -12,7 +12,10 @@ publish = false
 diesel = "1.4.1"
 dotenv = "0.13.0"
 enceladus_macros = { path = "./macros" }
+hashbrown = "0.1.8"
 jsonwebtoken = "5.0.1"
+lazy_static = "1.2.0"
+parking_lot = "0.7.1"
 rocket = "0.4.0"
 serde = { version = "1.0.85", features = ["derive"] }
 serde_json = "1.0.37"

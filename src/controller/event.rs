@@ -3,7 +3,14 @@ use crate::{
     Database,
 };
 use enceladus_macros::generate_structs;
+use hashbrown::HashMap;
+use lazy_static::lazy_static;
+use parking_lot::RwLock;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+
+lazy_static! {
+    static ref CACHE: RwLock<HashMap<i32, Event>> = RwLock::new(HashMap::new());
+}
 
 generate_structs! {
     Event("event") {
@@ -24,24 +31,36 @@ impl Event {
 
     #[inline]
     pub fn find_id(conn: &Database, event_id: i32) -> QueryResult<Event> {
-        event.find(event_id).first(conn)
+        let cache = CACHE.read();
+        if cache.contains_key(&event_id) {
+            Ok(cache[&event_id].clone())
+        } else {
+            let result: Event = event.find(event_id).first(conn)?;
+            CACHE.write().insert(event_id, result.clone());
+            Ok(result)
+        }
     }
 
     #[inline]
     pub fn create(conn: &Database, data: &InsertEvent) -> QueryResult<Event> {
-        diesel::insert_into(event).values(data).get_result(conn)
+        let result: Event = diesel::insert_into(event).values(data).get_result(conn)?;
+        CACHE.write().insert(result.id, result.clone());
+        Ok(result)
     }
 
     #[inline]
     pub fn update(conn: &Database, event_id: i32, data: &UpdateEvent) -> QueryResult<Event> {
-        diesel::update(event)
+        let result: Event = diesel::update(event)
             .filter(id.eq(event_id))
             .set(data)
-            .get_result(conn)
+            .get_result(conn)?;
+        CACHE.write().insert(result.id, result.clone());
+        Ok(result)
     }
 
     #[inline]
     pub fn delete(conn: &Database, event_id: i32) -> QueryResult<usize> {
+        CACHE.write().remove(&event_id);
         diesel::delete(event).filter(id.eq(event_id)).execute(conn)
     }
 }

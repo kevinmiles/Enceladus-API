@@ -5,8 +5,15 @@ use crate::{
     Database,
 };
 use enceladus_macros::generate_structs;
+use hashbrown::HashMap;
+use lazy_static::lazy_static;
+use parking_lot::RwLock;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use serde::Deserialize;
+
+lazy_static! {
+    static ref CACHE: RwLock<HashMap<i32, Thread>> = RwLock::new(HashMap::new());
+}
 
 generate_structs! {
     Thread("thread") {
@@ -43,7 +50,14 @@ impl Thread {
 
     #[inline]
     pub fn find_id(conn: &Database, thread_id: i32) -> QueryResult<Thread> {
-        thread.find(thread_id).first(conn)
+        let cache = CACHE.read();
+        if cache.contains_key(&thread_id) {
+            Ok(cache[&thread_id].clone())
+        } else {
+            let result: Thread = thread.find(thread_id).first(conn)?;
+            CACHE.write().insert(thread_id, result.clone());
+            Ok(result)
+        }
     }
 
     #[inline]
@@ -61,21 +75,26 @@ impl Thread {
             sections_id: vec![],
         };
 
-        diesel::insert_into(thread)
+        let result: Thread = diesel::insert_into(thread)
             .values(insertable_thread)
-            .get_result(conn)
+            .get_result(conn)?;
+        CACHE.write().insert(result.id, result.clone());
+        Ok(result)
     }
 
     #[inline]
     pub fn update(conn: &Database, thread_id: i32, data: &UpdateThread) -> QueryResult<Thread> {
-        diesel::update(thread)
+        let result: Thread = diesel::update(thread)
             .filter(id.eq(thread_id))
             .set(data)
-            .get_result(conn)
+            .get_result(conn)?;
+        CACHE.write().insert(result.id, result.clone());
+        Ok(result)
     }
 
     #[inline]
     pub fn delete(conn: &Database, thread_id: i32) -> QueryResult<usize> {
+        CACHE.write().remove(&thread_id);
         diesel::delete(thread)
             .filter(id.eq(thread_id))
             .execute(conn)

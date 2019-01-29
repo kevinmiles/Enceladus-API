@@ -158,7 +158,7 @@ pub fn generate_structs(item: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         #(#generated_fns)*
 
-        #[derive(serde::Serialize, serde::Deserialize, rocket_contrib::databases::diesel::Queryable)]
+        #[derive(Clone, serde::Serialize, serde::Deserialize, rocket_contrib::databases::diesel::Queryable)]
         #[table_name = #table]
         #[serde(deny_unknown_fields)]
         pub struct #name {
