@@ -22,7 +22,7 @@ use syn::{
 struct Declaration {
     name: Ident,
     _paren: token::Paren,
-    table_name: Punctuated<Expr, Token![,]>,
+    table_name: Expr,
     _brace: token::Brace,
     fields: Punctuated<Field, Token![,]>,
 }
@@ -35,7 +35,7 @@ impl Parse for Declaration {
         Ok(Declaration {
             name: input.parse()?,
             _paren: parenthesized!(paren_content in input),
-            table_name: paren_content.parse_terminated(Expr::parse)?,
+            table_name: paren_content.parse()?,
             _brace: braced!(brace_content in input),
             fields: brace_content.parse_terminated(Field::parse)?,
         })

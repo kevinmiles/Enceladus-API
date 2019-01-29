@@ -2,11 +2,6 @@ use crate::server;
 use rocket::http::Status;
 use serde_json::Value;
 
-#[inline]
-pub fn uuid() -> String {
-    uuid::Uuid::new_v4().to_string()
-}
-
 pub struct Client<'a> {
     base: &'a str,
     client: rocket::local::Client,
@@ -63,7 +58,7 @@ impl<'a> Client<'a> {
 }
 
 pub struct Response<'a>(rocket::local::LocalResponse<'a>);
-impl Response<'_> {
+impl<'a> Response<'a> {
     #[inline]
     fn status(&self) -> Status {
         self.0.status()
@@ -88,7 +83,19 @@ impl Response<'_> {
     }
 
     #[inline]
-    pub fn assert_body_is_array(mut self) -> Value {
+    pub fn assert_see_other(self) -> Self {
+        assert_eq!(self.status(), Status::SeeOther);
+        self
+    }
+
+    #[allow(unused)]
+    #[inline]
+    pub fn get_redirect_uri(self) -> String {
+        self.0.headers().get_one("Location").unwrap().into()
+    }
+
+    #[inline]
+    pub fn get_body_array(mut self) -> Value {
         let body = self.body();
         assert!(body.is_array(), "body is array");
         body
@@ -108,5 +115,10 @@ impl Response<'_> {
             .map(|body| serde_json::from_str(&body))
             .unwrap()
             .unwrap()
+    }
+
+    #[allow(unused)]
+    pub fn headers(self) -> rocket::http::HeaderMap<'a> {
+        self.0.headers().clone()
     }
 }

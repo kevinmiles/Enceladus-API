@@ -1,4 +1,4 @@
-use crate::tests::common::*;
+use crate::{guid, tests::common::*};
 use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/section";
@@ -14,10 +14,7 @@ fn create_section(client: &Client) -> Json {
 
 #[test]
 fn get_all() {
-    Client::new(BASE)
-        .get_all()
-        .assert_ok()
-        .assert_body_is_array();
+    Client::new(BASE).get_all().assert_ok().get_body_array();
 }
 
 #[test]
@@ -43,8 +40,8 @@ fn create() {
     let client = Client::new(BASE);
 
     let section = json!({
-        "name": uuid(),
-        "content": uuid(),
+        "name": guid(),
+        "content": guid(),
         "in_thread_id": 0, // temporary
     });
 
@@ -82,7 +79,7 @@ fn update() {
     assert_eq!(created_value["name"].as_str(), Some(""));
 
     // test
-    let data = json!({ "name": uuid() });
+    let data = json!({ "name": guid() });
     let body = client
         .patch(&created_value["id"], &data)
         .assert_ok()

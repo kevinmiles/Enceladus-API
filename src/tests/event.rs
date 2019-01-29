@@ -1,4 +1,4 @@
-use crate::tests::common::*;
+use crate::{guid, tests::common::*};
 use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/event";
@@ -15,10 +15,7 @@ fn create_event(client: &Client) -> Json {
 
 #[test]
 fn get_all() {
-    Client::new(BASE)
-        .get_all()
-        .assert_ok()
-        .assert_body_is_array();
+    Client::new(BASE).get_all().assert_ok().get_body_array();
 }
 
 #[test]
@@ -44,8 +41,8 @@ fn create() {
     let client = Client::new(BASE);
 
     let event = json!({
-        "message": uuid(),
-        "terminal_count": uuid(),
+        "message": guid(),
+        "terminal_count": guid(),
         "utc": rand::random::<i64>(),
         "in_thread_id": 0, // temporary
     });

@@ -1,4 +1,4 @@
-use crate::tests::common::*;
+use crate::{guid, tests::common::*};
 use serde_json::{json, Value as Json};
 
 pub const BASE: &str = "/v1/preset_event";
@@ -6,8 +6,8 @@ pub const BASE: &str = "/v1/preset_event";
 fn create_preset_event(client: &Client) -> Json {
     client
         .post(json!({
-            "message": uuid(),
-            "name": uuid(),
+            "message": guid(),
+            "name": guid(),
         }))
         .assert_created()
         .get_body_object()
@@ -15,10 +15,7 @@ fn create_preset_event(client: &Client) -> Json {
 
 #[test]
 fn get_all() {
-    Client::new(BASE)
-        .get_all()
-        .assert_ok()
-        .assert_body_is_array();
+    Client::new(BASE).get_all().assert_ok().get_body_array();
 }
 
 #[test]
@@ -44,8 +41,8 @@ fn create() {
     let client = Client::new(BASE);
 
     let event = json!({
-        "message": uuid(),
-        "name": uuid(),
+        "message": guid(),
+        "name": guid(),
     });
 
     let mut body = client.post(&event).assert_created().get_body_object();

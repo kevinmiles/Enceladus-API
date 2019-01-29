@@ -1,4 +1,4 @@
-use crate::tests::common::*;
+use crate::{guid, tests::common::*};
 use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/thread";
@@ -6,9 +6,9 @@ const BASE: &str = "/v1/thread";
 fn create_thread(client: &Client) -> Json {
     client
         .post(json!({
-            "thread_name": uuid(),
-            "launch_name": uuid(),
-            "subreddit": uuid(),
+            "thread_name": guid(),
+            "launch_name": guid(),
+            "subreddit": guid(),
         }))
         .assert_created()
         .get_body_object()
@@ -16,10 +16,7 @@ fn create_thread(client: &Client) -> Json {
 
 #[test]
 fn get_all() {
-    Client::new(BASE)
-        .get_all()
-        .assert_ok()
-        .assert_body_is_array();
+    Client::new(BASE).get_all().assert_ok().get_body_array();
 }
 
 #[test]
@@ -45,12 +42,12 @@ fn create() {
     let client = Client::new(BASE);
 
     let thread = json!({
-        "thread_name": uuid(),
-        "launch_name": uuid(),
-        "subreddit": uuid(),
+        "thread_name": guid(),
+        "launch_name": guid(),
+        "subreddit": guid(),
         "t0": rand::random::<i64>(),
-        "youtube_id": uuid()[0..11],
-        "spacex__api_id": uuid(),
+        "youtube_id": guid()[0..11],
+        "spacex__api_id": guid(),
     });
 
     let mut body = client.post(&thread).assert_created().get_body_object();
@@ -96,7 +93,7 @@ fn update() {
     assert_eq!(created_value["spacex__api_id"].as_str(), None);
 
     // test
-    let data = json!({ "spacex__api_id": uuid() });
+    let data = json!({ "spacex__api_id": guid() });
     let body = client
         .patch(&created_value["id"], &data)
         .assert_ok()

@@ -1,4 +1,4 @@
-use crate::tests::common::*;
+use crate::{guid, tests::common::*};
 use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/user";
@@ -6,8 +6,8 @@ const BASE: &str = "/v1/user";
 fn create_user(client: &Client) -> Json {
     client
         .post(json!({
-            "reddit_username": uuid(),
-            "refresh_token": uuid(),
+            "reddit_username": guid(),
+            "refresh_token": guid(),
         }))
         .assert_created()
         .get_body_object()
@@ -15,10 +15,7 @@ fn create_user(client: &Client) -> Json {
 
 #[test]
 fn get_all() {
-    Client::new(BASE)
-        .get_all()
-        .assert_ok()
-        .assert_body_is_array();
+    Client::new(BASE).get_all().assert_ok().get_body_array();
 }
 
 #[test]
@@ -44,8 +41,8 @@ fn create() {
     let client = Client::new(BASE);
 
     let user = json!({
-        "reddit_username": uuid(),
-        "refresh_token": uuid(),
+        "reddit_username": guid(),
+        "refresh_token": guid(),
     });
 
     let mut body = client.post(&user).assert_created().get_body_object();
