@@ -54,6 +54,10 @@ impl Thread {
         if cache.contains_key(&thread_id) {
             Ok(cache[&thread_id].clone())
         } else {
+            // drop the read lock on the cache,
+            // ensuring we can call `CACHE.write()` without issue
+            std::mem::drop(cache);
+
             let result: Thread = thread.find(thread_id).first(conn)?;
             CACHE.write().insert(thread_id, result.clone());
             Ok(result)

@@ -35,6 +35,10 @@ impl Section {
         if cache.contains_key(&section_id) {
             Ok(cache[&section_id].clone())
         } else {
+            // drop the read lock on the cache,
+            // ensuring we can call `CACHE.write()` without issue
+            std::mem::drop(cache);
+
             let result: Section = section.find(section_id).first(conn)?;
             CACHE.write().insert(section_id, result.clone());
             Ok(result)

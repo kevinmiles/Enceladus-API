@@ -1,5 +1,5 @@
 use crate::tests::common::*;
-use std::collections::HashMap;
+use hashbrown::HashMap;
 use url::Url;
 
 #[test]

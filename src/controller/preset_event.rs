@@ -35,6 +35,10 @@ impl PresetEvent {
         if cache.contains_key(&preset_event_id) {
             Ok(cache[&preset_event_id].clone())
         } else {
+            // drop the read lock on the cache,
+            // ensuring we can call `CACHE.write()` without issue
+            std::mem::drop(cache);
+
             let result: PresetEvent = preset_event.find(preset_event_id).first(conn)?;
             CACHE.write().insert(preset_event_id, result.clone());
             Ok(result)

@@ -46,6 +46,10 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
         false => guid()[0..2].to_string(),
     };
 
+    if cfg!(test) {
+        println!("point 1");
+    }
+
     // Insert the user into our database.
     let user = User::create(
         &conn,
@@ -77,6 +81,10 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
             ("token", &token),
         ],
     )?;
+
+    if cfg!(test) {
+        println!("point 4");
+    }
 
     Ok(Redirect::to(callback.to_string()))
 }

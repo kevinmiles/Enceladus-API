@@ -5,4 +5,4 @@ cargo fmt -- --check &&
   cargo clippy &&
   cd macros && cargo clippy && cd ..
   cargo check &&
-  cargo test
+  RUST_BACKTRACE=1 cargo test -v

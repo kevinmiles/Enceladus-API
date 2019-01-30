@@ -35,6 +35,10 @@ impl Event {
         if cache.contains_key(&event_id) {
             Ok(cache[&event_id].clone())
         } else {
+            // drop the read lock on the cache,
+            // ensuring we can call `CACHE.write()` without issue
+            std::mem::drop(cache);
+
             let result: Event = event.find(event_id).first(conn)?;
             CACHE.write().insert(event_id, result.clone());
             Ok(result)

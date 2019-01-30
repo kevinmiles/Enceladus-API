@@ -41,6 +41,10 @@ impl User {
         if cache.contains_key(&user_id) {
             Ok(cache[&user_id].clone())
         } else {
+            // drop the read lock on the cache,
+            // ensuring we can call `CACHE.write()` without issue
+            std::mem::drop(cache);
+
             let result: User = user.find(user_id).first(conn)?;
             CACHE.write().insert(user_id, result.clone());
             Ok(result)
