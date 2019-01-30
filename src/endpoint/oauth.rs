@@ -103,9 +103,5 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
         ],
     )?;
 
-    if cfg!(test) {
-        println!("point 4");
-    }
-
     Ok(Redirect::to(callback.to_string()))
 }

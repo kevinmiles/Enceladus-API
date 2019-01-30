@@ -62,7 +62,7 @@ impl Section {
     /// Does _not_ use cache (reading or writing),
     /// so as to avoid storing values rarely accessed.
     #[inline]
-    pub fn find_all(conn: &Database) -> QueryResult<Vec<Section>> {
+    pub fn find_all(conn: &Database) -> QueryResult<Vec<Self>> {
         section.load(conn)
     }
 
@@ -70,7 +70,7 @@ impl Section {
     ///
     /// Internally uses a cache to limit database accesses.
     #[inline]
-    pub fn find_id(conn: &Database, section_id: i32) -> QueryResult<Section> {
+    pub fn find_id(conn: &Database, section_id: i32) -> QueryResult<Self> {
         let cache = CACHE.read();
         if cache.contains_key(&section_id) {
             Ok(cache[&section_id].clone())
@@ -79,7 +79,7 @@ impl Section {
             // ensuring we can call `CACHE.write()` without issue
             std::mem::drop(cache);
 
-            let result: Section = section.find(section_id).first(conn)?;
+            let result: Self = section.find(section_id).first(conn)?;
             CACHE.write().insert(section_id, result.clone());
             Ok(result)
         }
@@ -89,8 +89,8 @@ impl Section {
     ///
     /// The inserted row is added to the global cache and returned.
     #[inline]
-    pub fn create(conn: &Database, data: &InsertSection) -> QueryResult<Section> {
-        let result: Section = diesel::insert_into(section).values(data).get_result(conn)?;
+    pub fn create(conn: &Database, data: &InsertSection) -> QueryResult<Self> {
+        let result: Self = diesel::insert_into(section).values(data).get_result(conn)?;
         CACHE.write().insert(result.id, result.clone());
         Ok(result)
     }
@@ -99,8 +99,8 @@ impl Section {
     ///
     /// The entry is updated in the database, added to cache, and returned.
     #[inline]
-    pub fn update(conn: &Database, section_id: i32, data: &UpdateSection) -> QueryResult<Section> {
-        let result: Section = diesel::update(section)
+    pub fn update(conn: &Database, section_id: i32, data: &UpdateSection) -> QueryResult<Self> {
+        let result: Self = diesel::update(section)
             .filter(id.eq(section_id))
             .set(data)
             .get_result(conn)?;

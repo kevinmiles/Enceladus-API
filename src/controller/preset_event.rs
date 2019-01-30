@@ -60,7 +60,7 @@ impl PresetEvent {
     /// Does _not_ use cache (reading or writing),
     /// so as to avoid storing values rarely accessed.
     #[inline]
-    pub fn find_all(conn: &Database) -> QueryResult<Vec<PresetEvent>> {
+    pub fn find_all(conn: &Database) -> QueryResult<Vec<Self>> {
         preset_event.load(conn)
     }
 
@@ -68,7 +68,7 @@ impl PresetEvent {
     ///
     /// Internally uses a cache to limit database accesses.
     #[inline]
-    pub fn find_id(conn: &Database, preset_event_id: i32) -> QueryResult<PresetEvent> {
+    pub fn find_id(conn: &Database, preset_event_id: i32) -> QueryResult<Self> {
         let cache = CACHE.read();
         if cache.contains_key(&preset_event_id) {
             Ok(cache[&preset_event_id].clone())
@@ -77,7 +77,7 @@ impl PresetEvent {
             // ensuring we can call `CACHE.write()` without issue
             std::mem::drop(cache);
 
-            let result: PresetEvent = preset_event.find(preset_event_id).first(conn)?;
+            let result: Self = preset_event.find(preset_event_id).first(conn)?;
             CACHE.write().insert(preset_event_id, result.clone());
             Ok(result)
         }
@@ -87,8 +87,8 @@ impl PresetEvent {
     ///
     /// The inserted row is added to the global cache and returned.
     #[inline]
-    pub fn create(conn: &Database, data: &InsertPresetEvent) -> QueryResult<PresetEvent> {
-        let result: PresetEvent = diesel::insert_into(preset_event)
+    pub fn create(conn: &Database, data: &InsertPresetEvent) -> QueryResult<Self> {
+        let result: Self = diesel::insert_into(preset_event)
             .values(data)
             .get_result(conn)?;
         CACHE.write().insert(result.id, result.clone());
@@ -103,8 +103,8 @@ impl PresetEvent {
         conn: &Database,
         preset_event_id: i32,
         data: &UpdatePresetEvent,
-    ) -> QueryResult<PresetEvent> {
-        let result: PresetEvent = diesel::update(preset_event)
+    ) -> QueryResult<Self> {
+        let result: Self = diesel::update(preset_event)
             .filter(id.eq(preset_event_id))
             .set(data)
             .get_result(conn)?;

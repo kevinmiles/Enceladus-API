@@ -66,7 +66,7 @@ impl User {
     /// Does _not_ use cache (reading or writing),
     /// so as to avoid storing values rarely accessed.
     #[inline]
-    pub fn find_all(conn: &Database) -> QueryResult<Vec<User>> {
+    pub fn find_all(conn: &Database) -> QueryResult<Vec<Self>> {
         user.load(conn)
     }
 
@@ -74,7 +74,7 @@ impl User {
     ///
     /// Internally uses a cache to limit database accesses.
     #[inline]
-    pub fn find_id(conn: &Database, user_id: i32) -> QueryResult<User> {
+    pub fn find_id(conn: &Database, user_id: i32) -> QueryResult<Self> {
         let cache = CACHE.read();
         if cache.contains_key(&user_id) {
             Ok(cache[&user_id].clone())
@@ -83,7 +83,7 @@ impl User {
             // ensuring we can call `CACHE.write()` without issue
             std::mem::drop(cache);
 
-            let result: User = user.find(user_id).first(conn)?;
+            let result: Self = user.find(user_id).first(conn)?;
             CACHE.write().insert(user_id, result.clone());
             Ok(result)
         }
@@ -93,8 +93,8 @@ impl User {
     ///
     /// The inserted row is added to the global cache and returned.
     #[inline]
-    pub fn create(conn: &Database, data: &InsertUser) -> QueryResult<User> {
-        let result: User = diesel::insert_into(user).values(data).get_result(conn)?;
+    pub fn create(conn: &Database, data: &InsertUser) -> QueryResult<Self> {
+        let result: Self = diesel::insert_into(user).values(data).get_result(conn)?;
         CACHE.write().insert(result.id, result.clone());
         Ok(result)
     }
@@ -103,8 +103,8 @@ impl User {
     ///
     /// The entry is updated in the database, added to cache, and returned.
     #[inline]
-    pub fn update(conn: &Database, user_id: i32, data: &UpdateUser) -> QueryResult<User> {
-        let result: User = diesel::update(user)
+    pub fn update(conn: &Database, user_id: i32, data: &UpdateUser) -> QueryResult<Self> {
+        let result: Self = diesel::update(user)
             .filter(id.eq(user_id))
             .set(data)
             .get_result(conn)?;

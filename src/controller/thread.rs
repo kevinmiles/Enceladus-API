@@ -83,7 +83,7 @@ impl Thread {
     /// Does _not_ use cache (reading or writing),
     /// so as to avoid storing values rarely accessed.
     #[inline]
-    pub fn find_all(conn: &Database) -> QueryResult<Vec<Thread>> {
+    pub fn find_all(conn: &Database) -> QueryResult<Vec<Self>> {
         thread.load(conn)
     }
 
@@ -91,7 +91,7 @@ impl Thread {
     ///
     /// Internally uses a cache to limit database accesses.
     #[inline]
-    pub fn find_id(conn: &Database, thread_id: i32) -> QueryResult<Thread> {
+    pub fn find_id(conn: &Database, thread_id: i32) -> QueryResult<Self> {
         let cache = CACHE.read();
         if cache.contains_key(&thread_id) {
             Ok(cache[&thread_id].clone())
@@ -100,7 +100,7 @@ impl Thread {
             // ensuring we can call `CACHE.write()` without issue
             std::mem::drop(cache);
 
-            let result: Thread = thread.find(thread_id).first(conn)?;
+            let result: Self = thread.find(thread_id).first(conn)?;
             CACHE.write().insert(thread_id, result.clone());
             Ok(result)
         }
@@ -110,7 +110,7 @@ impl Thread {
     ///
     /// The inserted row is added to the global cache and returned.
     #[inline]
-    pub fn create(conn: &Database, data: &ExternalInsertThread) -> QueryResult<Thread> {
+    pub fn create(conn: &Database, data: &ExternalInsertThread) -> QueryResult<Self> {
         let insertable_thread = InsertThread {
             thread_name: data.thread_name.clone(),
             launch_name: data.launch_name.clone(),
@@ -124,7 +124,7 @@ impl Thread {
             sections_id: vec![],
         };
 
-        let result: Thread = diesel::insert_into(thread)
+        let result: Self = diesel::insert_into(thread)
             .values(insertable_thread)
             .get_result(conn)?;
         CACHE.write().insert(result.id, result.clone());
@@ -135,8 +135,8 @@ impl Thread {
     ///
     /// The entry is updated in the database, added to cache, and returned.
     #[inline]
-    pub fn update(conn: &Database, thread_id: i32, data: &UpdateThread) -> QueryResult<Thread> {
-        let result: Thread = diesel::update(thread)
+    pub fn update(conn: &Database, thread_id: i32, data: &UpdateThread) -> QueryResult<Self> {
+        let result: Self = diesel::update(thread)
             .filter(id.eq(thread_id))
             .set(data)
             .get_result(conn)?;

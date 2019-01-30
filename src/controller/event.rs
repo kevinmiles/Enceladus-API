@@ -62,7 +62,7 @@ impl Event {
     /// Does _not_ use cache (reading or writing),
     /// so as to avoid storing values rarely accessed.
     #[inline]
-    pub fn find_all(conn: &Database) -> QueryResult<Vec<Event>> {
+    pub fn find_all(conn: &Database) -> QueryResult<Vec<Self>> {
         event.load(conn)
     }
 
@@ -70,7 +70,7 @@ impl Event {
     ///
     /// Internally uses a cache to limit database accesses.
     #[inline]
-    pub fn find_id(conn: &Database, event_id: i32) -> QueryResult<Event> {
+    pub fn find_id(conn: &Database, event_id: i32) -> QueryResult<Self> {
         let cache = CACHE.read();
         if cache.contains_key(&event_id) {
             Ok(cache[&event_id].clone())
@@ -79,7 +79,7 @@ impl Event {
             // ensuring we can call `CACHE.write()` without issue
             std::mem::drop(cache);
 
-            let result: Event = event.find(event_id).first(conn)?;
+            let result: Self = event.find(event_id).first(conn)?;
             CACHE.write().insert(event_id, result.clone());
             Ok(result)
         }
@@ -89,8 +89,8 @@ impl Event {
     ///
     /// The inserted row is added to the global cache and returned.
     #[inline]
-    pub fn create(conn: &Database, data: &InsertEvent) -> QueryResult<Event> {
-        let result: Event = diesel::insert_into(event).values(data).get_result(conn)?;
+    pub fn create(conn: &Database, data: &InsertEvent) -> QueryResult<Self> {
+        let result: Self = diesel::insert_into(event).values(data).get_result(conn)?;
         CACHE.write().insert(result.id, result.clone());
         Ok(result)
     }
@@ -99,8 +99,8 @@ impl Event {
     ///
     /// The entry is updated in the database, added to cache, and returned.
     #[inline]
-    pub fn update(conn: &Database, event_id: i32, data: &UpdateEvent) -> QueryResult<Event> {
-        let result: Event = diesel::update(event)
+    pub fn update(conn: &Database, event_id: i32, data: &UpdateEvent) -> QueryResult<Self> {
+        let result: Self = diesel::update(event)
             .filter(id.eq(event_id))
             .set(data)
             .get_result(conn)?;

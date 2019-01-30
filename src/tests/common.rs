@@ -1,10 +1,13 @@
 use crate::server;
-use rocket::http::Status;
+use rocket::{
+    http::HeaderMap, http::Status, local::Client as RocketClient,
+    local::LocalResponse as RocketResponse,
+};
 use serde_json::Value;
 
 pub struct Client<'a> {
     base: &'a str,
-    client: rocket::local::Client,
+    client: RocketClient,
 }
 
 impl<'a> Client<'a> {
@@ -12,7 +15,7 @@ impl<'a> Client<'a> {
     pub fn new(base: &'a str) -> Self {
         Client {
             base,
-            client: rocket::local::Client::new(server()).expect("invalid rocket instance"),
+            client: RocketClient::new(server()).expect("invalid rocket instance"),
         }
     }
 
@@ -23,7 +26,7 @@ impl<'a> Client<'a> {
 
     #[inline]
     pub fn get_all(&self) -> Response {
-        Response(self.client.get(self.url_for("")).dispatch())
+        self.get("")
     }
 
     #[inline]
@@ -57,7 +60,7 @@ impl<'a> Client<'a> {
     }
 }
 
-pub struct Response<'a>(rocket::local::LocalResponse<'a>);
+pub struct Response<'a>(RocketResponse<'a>);
 impl<'a> Response<'a> {
     #[inline]
     fn status(&self) -> Status {
@@ -118,7 +121,7 @@ impl<'a> Response<'a> {
     }
 
     #[allow(unused)]
-    pub fn headers(self) -> rocket::http::HeaderMap<'a> {
+    pub fn headers(self) -> HeaderMap<'a> {
         self.0.headers().clone()
     }
 }
