@@ -11,6 +11,11 @@ use url::Url;
 // such that we can avoid going to reddit
 // if another app asks for authentication
 
+/// Endpoint that redirects the user to Reddit,
+/// requesting to provided permissions.
+///
+/// In testing, this endpoint immediately forwards to `callback()`
+/// in order to avoid any user input or external requests.
 #[inline]
 #[get("/?<callback>")]
 pub fn oauth(callback: &RawStr) -> Redirect {
@@ -27,6 +32,26 @@ pub fn oauth(callback: &RawStr) -> Redirect {
     Redirect::to(uri!("/oauth", callback: code = guid(), state = &callback))
 }
 
+/// Handle the OAuth response from Reddit.
+///
+/// Here, we are provided with a refresh token in response to the external OAuth request,
+/// and use that token to obtain the user's username and preferred language.
+/// All of these values are then used to construct a User
+/// which is inserted into the database.
+/// We then use the ID returned from the database insertion to generate a
+/// [JSON Web Token](https://jwt.io/), which is the user's bearer token
+/// that should be provided in the header of each request.
+/// Finally, we call the callback URL originally provided,
+/// with the additional queryparams of `user_id`, `username`, `lang`, and `token`.
+///
+/// Please note that `is_global_admin`, along with any specific subreddit values,
+/// are **not** initialized, but rather use default values.
+/// In the future, there may be an endpoint in the `/v1/user` namespace (or similar)
+/// that will automatically perform verification of moderator status
+/// (or anything else deemed appropriate).
+/// Until that time,
+/// these fields must be managed manually,
+/// typically by contacting the database operator.
 #[inline]
 #[get("/callback?<code>&<state>")]
 pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, Box<Error>> {
@@ -45,10 +70,6 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
         true => guid()[0..2].to_string(),
         false => guid()[0..2].to_string(),
     };
-
-    if cfg!(test) {
-        println!("point 1");
-    }
 
     // Insert the user into our database.
     let user = User::create(

@@ -9,6 +9,39 @@ use parking_lot::RwLock;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 
 lazy_static! {
+    /// A global cache, containing a mapping of IDs to their respective `Event`.
+    ///
+    /// The cache is protected by a `RwLock`,
+    /// ensuring there is only ever at most one writer (and no readers) at a point in time.
+    ///
+    /// To read from the cache,
+    /// you'll want to call `CACHE.read()` before performing normal operations.
+    /// The same is true for `CACHE.write()`.
+    ///
+    /// It is _highly_ recommended to manually call `drop()` after you're done using the lock.
+    /// This ensures that nothing else is blocked from accessing the cache if necessary.
+    ///
+    /// Here's example of when this is necessary to ensure working code:
+    ///
+    /// ```rust
+    /// // Obtain a read lock on the global cache.
+    /// let cache = CACHE.read();
+    ///
+    /// if cache.contains_key("foo") {
+    ///     // Do something with the value.
+    ///     cache["foo"]
+    /// } else {
+    ///     // Manually drop the `cache` variable,
+    ///     // letting us obtain a write lock.
+    ///     std::mem::drop(cache);
+    ///
+    ///     // Now we can obtain a write lock without having to wait
+    ///     // for the read lock to be dropped automatically.
+    ///     // Note that this _would not happen_ until _after_ the request for the write lock,
+    ///     // causing a deadlock in the code not caught by the compiler.
+    ///     CACHE.write().insert("foo", "bar");
+    /// }
+    /// ```
     static ref CACHE: RwLock<HashMap<i32, Event>> = RwLock::new(HashMap::new());
 }
 
@@ -24,11 +57,18 @@ generate_structs! {
 }
 
 impl Event {
+    /// Find all `Event`s in the database.
+    ///
+    /// Does _not_ use cache (reading or writing),
+    /// so as to avoid storing values rarely accessed.
     #[inline]
     pub fn find_all(conn: &Database) -> QueryResult<Vec<Event>> {
         event.load(conn)
     }
 
+    /// Find a given `Event` by its ID.
+    ///
+    /// Internally uses a cache to limit database accesses.
     #[inline]
     pub fn find_id(conn: &Database, event_id: i32) -> QueryResult<Event> {
         let cache = CACHE.read();
@@ -45,6 +85,9 @@ impl Event {
         }
     }
 
+    /// Create an `Event` given the data.
+    ///
+    /// The inserted row is added to the global cache and returned.
     #[inline]
     pub fn create(conn: &Database, data: &InsertEvent) -> QueryResult<Event> {
         let result: Event = diesel::insert_into(event).values(data).get_result(conn)?;
@@ -52,6 +95,9 @@ impl Event {
         Ok(result)
     }
 
+    /// Update an `Event` given an ID and the data to update.
+    ///
+    /// The entry is updated in the database, added to cache, and returned.
     #[inline]
     pub fn update(conn: &Database, event_id: i32, data: &UpdateEvent) -> QueryResult<Event> {
         let result: Event = diesel::update(event)
@@ -62,6 +108,9 @@ impl Event {
         Ok(result)
     }
 
+    /// Delete an `Event` given its ID.
+    ///
+    /// Removes the entry from cache and returns the number of rows deleted (should be `1`).
     #[inline]
     pub fn delete(conn: &Database, event_id: i32) -> QueryResult<usize> {
         CACHE.write().remove(&event_id);

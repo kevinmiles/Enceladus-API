@@ -11,6 +11,39 @@ use parking_lot::RwLock;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 
 lazy_static! {
+    /// A global cache, containing a mapping of IDs to their respective `User`.
+    ///
+    /// The cache is protected by a `RwLock`,
+    /// ensuring there is only ever at most one writer (and no readers) at a point in time.
+    ///
+    /// To read from the cache,
+    /// you'll want to call `CACHE.read()` before performing normal operations.
+    /// The same is true for `CACHE.write()`.
+    ///
+    /// It is _highly_ recommended to manually call `drop()` after you're done using the lock.
+    /// This ensures that nothing else is blocked from accessing the cache if necessary.
+    ///
+    /// Here's example of when this is necessary to ensure working code:
+    ///
+    /// ```rust
+    /// // Obtain a read lock on the global cache.
+    /// let cache = CACHE.read();
+    ///
+    /// if cache.contains_key("foo") {
+    ///     // Do something with the value.
+    ///     cache["foo"]
+    /// } else {
+    ///     // Manually drop the `cache` variable,
+    ///     // letting us obtain a write lock.
+    ///     std::mem::drop(cache);
+    ///
+    ///     // Now we can obtain a write lock without having to wait
+    ///     // for the read lock to be dropped automatically.
+    ///     // Note that this _would not happen_ until _after_ the request for the write lock,
+    ///     // causing a deadlock in the code not caught by the compiler.
+    ///     CACHE.write().insert("foo", "bar");
+    /// }
+    /// ```
     static ref CACHE: RwLock<HashMap<i32, User>> = RwLock::new(HashMap::new());
 }
 
@@ -28,13 +61,18 @@ generate_structs! {
 }
 
 impl User {
-    /// Find all `User`s present in the database and return the result.
+    /// Find all `User`s in the database.
+    ///
+    /// Does _not_ use cache (reading or writing),
+    /// so as to avoid storing values rarely accessed.
     #[inline]
     pub fn find_all(conn: &Database) -> QueryResult<Vec<User>> {
         user.load(conn)
     }
 
     /// Find a specific `User` given its ID.
+    ///
+    /// Internally uses a cache to limit database accesses.
     #[inline]
     pub fn find_id(conn: &Database, user_id: i32) -> QueryResult<User> {
         let cache = CACHE.read();
@@ -52,7 +90,8 @@ impl User {
     }
 
     /// Create a `User` given the data.
-    /// Returns the inserted row.
+    ///
+    /// The inserted row is added to the global cache and returned.
     #[inline]
     pub fn create(conn: &Database, data: &InsertUser) -> QueryResult<User> {
         let result: User = diesel::insert_into(user).values(data).get_result(conn)?;
@@ -61,7 +100,8 @@ impl User {
     }
 
     /// Update a `User` given an ID and the data to update.
-    /// Returns the full row.
+    ///
+    /// The entry is updated in the database, added to cache, and returned.
     #[inline]
     pub fn update(conn: &Database, user_id: i32, data: &UpdateUser) -> QueryResult<User> {
         let result: User = diesel::update(user)
@@ -72,8 +112,9 @@ impl User {
         Ok(result)
     }
 
-    /// Delete a `PresetEvent` given its ID.
-    /// Returns the number of rows deleted (should be `1`).
+    /// Delete a `User` given its ID.
+    ///
+    /// Removes the entry from cache and returns the number of rows deleted (should be `1`).
     #[inline]
     pub fn delete(conn: &Database, user_id: i32) -> QueryResult<usize> {
         CACHE.write().remove(&user_id);

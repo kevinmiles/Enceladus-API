@@ -10,9 +10,9 @@
 #[macro_use]
 extern crate diesel;
 
-mod controller;
-mod endpoint;
-mod schema;
+pub mod controller;
+pub mod endpoint;
+pub mod schema;
 
 #[cfg(test)]
 mod tests;
@@ -22,7 +22,7 @@ use dotenv::dotenv;
 use rocket::{routes, Rocket};
 use rocket_contrib::{database, helmet::SpaceHelmet};
 
-// single point to change if we need to alter the DBMS
+/// Single point to change if we need to alter the DBMS.
 pub type Database = diesel::PgConnection;
 #[database("data")]
 pub struct DataDB(Database);
@@ -33,6 +33,8 @@ macro_rules! all_routes {
     };
 }
 
+/// Returns a globally unique identifier.
+/// Specifically, v4, which is not based on any input factors.
 #[inline]
 pub fn guid() -> String {
     uuid::Uuid::new_v4().to_string()
@@ -63,6 +65,8 @@ pub fn server() -> Rocket {
 }
 
 /// Launch the server.
-fn main() {
+/// Uses the port number defined in the environment variable `ROCKET_PORT`.
+/// If not defined, defaults to `8000`.
+pub fn main() {
     server().launch();
 }

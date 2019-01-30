@@ -1,3 +1,6 @@
+/// Generate an endpoint for fetching all of the provided type.
+///
+/// This macro should suffice for most, if not all, types.
 #[macro_export]
 macro_rules! generic_all {
     ($x:ident) => {
@@ -11,6 +14,9 @@ macro_rules! generic_all {
     };
 }
 
+/// Generate an endpoint for fetching a specific instance of the provided type.
+///
+/// This macro should suffice for any type not requiring user-provided JOINs.
 #[macro_export]
 macro_rules! generic_get {
     ($x:ident) => {
@@ -25,6 +31,10 @@ macro_rules! generic_get {
     };
 }
 
+/// Generate an endpoint for creating an instance of the provided type.
+///
+/// This macro should suffice whenever the type does not require
+/// any additional checking of parameters or other consideration.
 #[macro_export]
 macro_rules! generic_post {
     ($x:ident) => {
@@ -41,6 +51,10 @@ macro_rules! generic_post {
     };
 }
 
+/// Generate an endpoint for updating an instance of the provided type.
+///
+/// This macro should suffice whenever the type does not require
+/// any additional checking of parameters or other consideration.
 #[macro_export]
 macro_rules! generic_patch {
     ($x:ident) => {
@@ -56,6 +70,9 @@ macro_rules! generic_patch {
     };
 }
 
+/// Generate an endpoint for updating an instance of the provided type.
+///
+/// This macro should suffice for most, if not all, types.
 #[macro_export]
 macro_rules! generic_delete {
     ($x:ident) => {
