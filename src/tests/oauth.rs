@@ -30,4 +30,7 @@ fn returns_auth_data() {
     assert!(auth_data.contains_key("username"));
     assert!(auth_data.contains_key("lang"));
     assert!(auth_data.contains_key("token"));
+
+    // teardown
+    Client::new("/v1/user").delete(&auth_data["user_id"]);
 }
