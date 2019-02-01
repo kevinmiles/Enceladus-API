@@ -5,9 +5,12 @@ const BASE: &str = "/v1/section";
 
 fn create_section(client: &Client) -> Json {
     client
-        .post(json!({
-            "in_thread_id": 0, // temporary
-        }))
+        .post(
+            None,
+            json!({
+                "in_thread_id": 0, // temporary
+            }),
+        )
         .assert_created()
         .get_body_object()
 }
@@ -45,7 +48,10 @@ fn create() {
         "in_thread_id": 0, // temporary
     });
 
-    let mut body = client.post(&section).assert_created().get_body_object();
+    let mut body = client
+        .post(None, &section)
+        .assert_created()
+        .get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
 
     // store this so we can perform the teardown

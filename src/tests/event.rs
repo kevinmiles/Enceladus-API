@@ -5,10 +5,13 @@ const BASE: &str = "/v1/event";
 
 fn create_event(client: &Client) -> Json {
     client
-        .post(json!({
-            "utc": 1_500_000_000,
-            "in_thread_id": 0, // temporary
-        }))
+        .post(
+            None,
+            json!({
+                "utc": 1_500_000_000,
+                "in_thread_id": 0, // temporary
+            }),
+        )
         .assert_created()
         .get_body_object()
 }
@@ -47,7 +50,7 @@ fn create() {
         "in_thread_id": 0, // temporary
     });
 
-    let mut body = client.post(&event).assert_created().get_body_object();
+    let mut body = client.post(None, &event).assert_created().get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
 
     // store this so we can perform the teardown

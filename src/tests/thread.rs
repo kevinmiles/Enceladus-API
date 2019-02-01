@@ -2,14 +2,40 @@ use crate::{guid, tests::common::*};
 use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/thread";
+const USER_BASE: &str = "/v1/user";
 
-fn create_thread(client: &Client) -> Json {
+fn create_user() -> (i32, String) {
+    let response = Client::new(USER_BASE)
+        .post(
+            None,
+            json!({
+                "reddit_username": guid(),
+                "refresh_token": guid(),
+            }),
+        )
+        .assert_created()
+        .get_body_object();
+
+    (
+        response["id"].as_i64().unwrap() as i32,
+        response["token"].as_str().unwrap().to_owned(),
+    )
+}
+
+fn delete_user(user_id: i32) {
+    Client::new(USER_BASE).delete(user_id);
+}
+
+fn create_thread(client: &Client, _user_id: i32, token: String) -> Json {
     client
-        .post(json!({
-            "thread_name": guid(),
-            "launch_name": guid(),
-            "subreddit": guid(),
-        }))
+        .post(
+            Some(token),
+            json!({
+                "thread_name": guid(),
+                "launch_name": guid(),
+                "subreddit": guid(),
+            }),
+        )
         .assert_created()
         .get_body_object()
 }
@@ -24,7 +50,8 @@ fn get_one() {
     let client = Client::new(BASE);
 
     // setup
-    let created_value = create_thread(&client);
+    let (user_id, user_token) = create_user();
+    let created_value = create_thread(&client, user_id, user_token);
 
     // test
     let body = client
@@ -35,11 +62,13 @@ fn get_one() {
 
     // teardown
     client.delete(&body["id"]);
+    delete_user(user_id);
 }
 
 #[test]
 fn create() {
     let client = Client::new(BASE);
+    let (user_id, user_token) = create_user();
 
     let thread = json!({
         "thread_name": guid(),
@@ -50,7 +79,10 @@ fn create() {
         "spacex__api_id": guid(),
     });
 
-    let mut body = client.post(&thread).assert_created().get_body_object();
+    let mut body = client
+        .post(Some(user_token), &thread)
+        .assert_created()
+        .get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
 
     // store this so we can perform the teardown
@@ -59,13 +91,12 @@ fn create() {
     // Remove this, as we don't know what value we should expect.
     // Afterwards, we can ensure that the value is null.
     body["id"].take();
-    body["created_by_user_id"].take();
     assert_eq!(
         body,
         json!({
             // auto-generated
             "id": null,
-            "created_by_user_id": null,
+            "created_by_user_id": user_id,
             "post_id": null,
             "sections_id": [],
             "events_id": [],
@@ -82,6 +113,23 @@ fn create() {
 
     // teardown
     client.delete(id);
+    delete_user(user_id);
+}
+
+#[test]
+#[should_panic]
+fn create_no_auth() {
+    let client = Client::new(BASE);
+    let thread = json!({
+        "thread_name": guid(),
+        "launch_name": guid(),
+        "subreddit": guid(),
+        "t0": rand::random::<i64>(),
+        "youtube_id": guid()[0..11],
+        "spacex__api_id": guid(),
+    });
+
+    client.post(None, &thread).assert_created();
 }
 
 #[test]
@@ -89,7 +137,8 @@ fn update() {
     let client = Client::new(BASE);
 
     // setup
-    let created_value = create_thread(&client);
+    let (user_id, user_token) = create_user();
+    let created_value = create_thread(&client, user_id, user_token);
     assert_eq!(created_value["spacex__api_id"].as_str(), None);
 
     // test
@@ -102,6 +151,7 @@ fn update() {
 
     // teardown
     client.delete(&created_value["id"]);
+    delete_user(user_id);
 }
 
 #[test]
@@ -109,8 +159,10 @@ fn delete() {
     let client = Client::new(BASE);
 
     // setup
-    let created_value = create_thread(&client);
+    let (user_id, user_token) = create_user();
+    let created_value = create_thread(&client, user_id, user_token);
 
     // test
     client.delete(&created_value["id"]).assert_no_content();
+    delete_user(user_id);
 }

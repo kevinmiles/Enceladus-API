@@ -1,6 +1,7 @@
 use crate::server;
 use rocket::{
-    http::HeaderMap, http::Status, local::Client as RocketClient,
+    http::{Header, Status},
+    local::Client as RocketClient,
     local::LocalResponse as RocketResponse,
 };
 use serde_json::Value;
@@ -35,13 +36,23 @@ impl<'a> Client<'a> {
     }
 
     #[inline]
-    pub fn post(&self, body: impl ToString) -> Response {
-        Response(
-            self.client
+    pub fn post(&self, token: Option<String>, body: impl ToString) -> Response {
+        Response(match token {
+            Some(token) => self
+                .client
+                .post(self.base)
+                .body(body.to_string())
+                .header(Header::new(
+                    "Authentication",
+                    format!("Bearer {}", token.to_string()),
+                ))
+                .dispatch(),
+            None => self
+                .client
                 .post(self.base)
                 .body(body.to_string())
                 .dispatch(),
-        )
+        })
     }
 
     #[inline]
@@ -60,6 +71,7 @@ impl<'a> Client<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct Response<'a>(RocketResponse<'a>);
 impl<'a> Response<'a> {
     #[inline]
@@ -91,7 +103,6 @@ impl<'a> Response<'a> {
         self
     }
 
-    #[allow(unused)]
     #[inline]
     pub fn get_redirect_uri(self) -> String {
         self.0.headers().get_one("Location").unwrap().into()
@@ -118,10 +129,5 @@ impl<'a> Response<'a> {
             .map(|body| serde_json::from_str(&body))
             .unwrap()
             .unwrap()
-    }
-
-    #[allow(unused)]
-    pub fn headers(self) -> HeaderMap<'a> {
-        self.0.headers().clone()
     }
 }

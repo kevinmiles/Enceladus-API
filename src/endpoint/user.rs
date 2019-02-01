@@ -1,7 +1,54 @@
-use crate::controller::user::{InsertUser, UpdateUser, User};
+#![allow(non_snake_case)]
+
+use crate::{
+    controller::{
+        claim::Claim,
+        user::{InsertUser, UpdateUser, User},
+    },
+    endpoint::helpers::RocketResult,
+    DataDB,
+};
+use rocket::{post, response::status::Created};
+use rocket_contrib::json::Json;
+use serde::Serialize;
+use std::convert::From;
 
 generic_all!(User);
 generic_get!(User);
-generic_post!(User);
 generic_patch!(User);
 generic_delete!(User);
+
+#[inline]
+#[post("/", data = "<data>")]
+pub fn post(conn: DataDB, data: Json<InsertUser>) -> RocketResult<Created<Json<TokenUser>>> {
+    created!(User::create(&conn, &data).map(TokenUser::from))
+}
+
+// There's no need to use this elsewhere,
+// as this struct exists solely to make testing easier.
+#[derive(Serialize)]
+pub struct TokenUser {
+    token: String,
+    id: i32,
+    reddit_username: String,
+    lang: String,
+    is_global_admin: bool,
+    spacex__is_admin: bool,
+    spacex__is_mod: bool,
+    spacex__is_slack_member: bool,
+}
+
+impl From<User> for TokenUser {
+    fn from(user: User) -> TokenUser {
+        TokenUser {
+            token: Claim::new(user.id).encode().unwrap(),
+            id: user.id,
+            reddit_username: user.reddit_username,
+            lang: user.lang,
+            is_global_admin: user.is_global_admin,
+            spacex__is_admin: user.spacex__is_admin,
+            spacex__is_mod: user.spacex__is_mod,
+            spacex__is_slack_member: user.spacex__is_slack_member,
+        }
+    }
+}

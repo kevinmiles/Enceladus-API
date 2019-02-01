@@ -110,7 +110,7 @@ impl Thread {
     ///
     /// The inserted row is added to the global cache and returned.
     #[inline]
-    pub fn create(conn: &Database, data: &ExternalInsertThread) -> QueryResult<Self> {
+    pub fn create(conn: &Database, data: &ExternalInsertThread, user_id: i32) -> QueryResult<Self> {
         let insertable_thread = InsertThread {
             thread_name: data.thread_name.clone(),
             launch_name: data.launch_name.clone(),
@@ -119,7 +119,7 @@ impl Thread {
             t0: data.t0,
             youtube_id: data.youtube_id.clone(),
             spacex__api_id: data.spacex__api_id.clone(),
-            created_by_user_id: 0, // temporary
+            created_by_user_id: user_id,
             events_id: vec![],
             sections_id: vec![],
         };

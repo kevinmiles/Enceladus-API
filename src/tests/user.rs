@@ -5,10 +5,13 @@ const BASE: &str = "/v1/user";
 
 fn create_user(client: &Client) -> Json {
     client
-        .post(json!({
-            "reddit_username": guid(),
-            "refresh_token": guid(),
-        }))
+        .post(
+            None,
+            json!({
+                "reddit_username": guid(),
+                "refresh_token": guid(),
+            }),
+        )
         .assert_created()
         .get_body_object()
 }
@@ -30,7 +33,21 @@ fn get_one() {
         .get(&created_value["id"])
         .assert_ok()
         .get_body_object();
-    assert_eq!(created_value, body);
+
+    // The token field only exists in testing,
+    // and is only returned on the "create" endpoint.
+    assert_eq!(
+        body,
+        json!({
+            "id": created_value["id"],
+            "reddit_username": created_value["reddit_username"],
+            "lang": created_value["lang"],
+            "is_global_admin": created_value["is_global_admin"],
+            "spacex__is_admin": created_value["spacex__is_admin"],
+            "spacex__is_mod": created_value["spacex__is_mod"],
+            "spacex__is_slack_member": created_value["spacex__is_slack_member"],
+        })
+    );
 
     // teardown
     client.delete(&created_value["id"]);
@@ -45,7 +62,7 @@ fn create() {
         "refresh_token": guid(),
     });
 
-    let mut body = client.post(&user).assert_created().get_body_object();
+    let mut body = client.post(None, &user).assert_created().get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
     assert_eq!(body.get("refresh_token"), None);
 
@@ -55,9 +72,11 @@ fn create() {
     // Remove this, as we don't know what value we should expect.
     // Afterwards, we can ensure that the value is null.
     body["id"].take();
+    body["token"].take();
     assert_eq!(
         body,
         json!({
+            "token": null,
             "id": null,
             "reddit_username": user["reddit_username"],
             "lang": "en",

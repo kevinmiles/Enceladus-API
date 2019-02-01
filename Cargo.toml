@@ -9,6 +9,7 @@ build = "build.rs"
 publish = false
 
 [dependencies]
+chrono = "0.4.6"
 diesel = "1.4.1"
 dotenv = "0.13.0"
 enceladus_macros = { path = "./macros" }

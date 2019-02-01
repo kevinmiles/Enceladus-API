@@ -1,3 +1,4 @@
+pub mod claim;
 pub mod event;
 pub mod preset_event;
 pub mod section;

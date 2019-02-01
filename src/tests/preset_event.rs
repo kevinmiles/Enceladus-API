@@ -5,10 +5,13 @@ pub const BASE: &str = "/v1/preset_event";
 
 fn create_preset_event(client: &Client) -> Json {
     client
-        .post(json!({
-            "message": guid(),
-            "name": guid(),
-        }))
+        .post(
+            None,
+            json!({
+                "message": guid(),
+                "name": guid(),
+            }),
+        )
         .assert_created()
         .get_body_object()
 }
@@ -45,7 +48,7 @@ fn create() {
         "name": guid(),
     });
 
-    let mut body = client.post(&event).assert_created().get_body_object();
+    let mut body = client.post(None, &event).assert_created().get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
 
     // store this so we can perform the teardown

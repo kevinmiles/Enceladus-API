@@ -1,8 +1,10 @@
 use crate::{
-    controller::user::{InsertUser, User},
+    controller::{
+        claim::Claim,
+        user::{InsertUser, User},
+    },
     guid, DataDB,
 };
-use jsonwebtoken as jwt;
 use rocket::{get, http::RawStr, response::Redirect, uri};
 use std::error::Error;
 use url::Url;
@@ -86,11 +88,7 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
     )?;
 
     // Give the user a token that should be used in the future.
-    let token = jwt::encode(
-        &jwt::Header::default(),
-        &user.id,
-        std::env::var("ROCKET_SECRET_KEY").unwrap().as_bytes(),
-    )?;
+    let token = Claim::new(user.id).encode()?;
 
     // Attach additional querystring parameters to the provided callback.
     let callback = Url::parse_with_params(
