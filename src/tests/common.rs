@@ -42,10 +42,7 @@ impl<'a> Client<'a> {
                 .client
                 .post(self.base)
                 .body(body.to_string())
-                .header(Header::new(
-                    "Authentication",
-                    format!("Bearer {}", token.to_string()),
-                ))
+                .header(Header::new("Authentication", format!("Bearer {}", token)))
                 .dispatch(),
             None => self
                 .client
@@ -56,18 +53,32 @@ impl<'a> Client<'a> {
     }
 
     #[inline]
-    pub fn patch(&self, id: impl ToString, body: impl ToString) -> Response {
-        Response(
-            self.client
+    pub fn patch(&self, token: Option<String>, id: impl ToString, body: impl ToString) -> Response {
+        Response(match token {
+            Some(token) => self
+                .client
+                .patch(self.url_for(id))
+                .body(body.to_string())
+                .header(Header::new("Authentication", format!("Bearer {}", token)))
+                .dispatch(),
+            None => self
+                .client
                 .patch(self.url_for(id))
                 .body(body.to_string())
                 .dispatch(),
-        )
+        })
     }
 
     #[inline]
-    pub fn delete(&self, id: impl ToString) -> Response {
-        Response(self.client.delete(self.url_for(id)).dispatch())
+    pub fn delete(&self, token: Option<String>, id: impl ToString) -> Response {
+        Response(match token {
+            Some(token) => self
+                .client
+                .delete(self.url_for(id))
+                .header(Header::new("Authentication", format!("Bearer {}", token)))
+                .dispatch(),
+            None => self.client.delete(self.url_for(id)).dispatch(),
+        })
     }
 }
 

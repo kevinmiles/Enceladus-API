@@ -35,7 +35,7 @@ fn get_one() {
     assert_eq!(created_value, body);
 
     // teardown
-    client.delete(&created_value["id"]);
+    client.delete(None, &created_value["id"]);
 }
 
 #[test]
@@ -73,7 +73,7 @@ fn create() {
     );
 
     // teardown
-    client.delete(id);
+    client.delete(None, id);
 }
 
 #[test]
@@ -87,13 +87,13 @@ fn update() {
     // test
     let data = json!({ "name": guid() });
     let body = client
-        .patch(&created_value["id"], &data)
+        .patch(None, &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
     assert_eq!(body["name"], data["name"]);
 
     // teardown
-    client.delete(&created_value["id"]);
+    client.delete(None, &created_value["id"]);
 }
 
 #[test]
@@ -104,5 +104,7 @@ fn delete() {
     let created_value = create_section(&client);
 
     // test
-    client.delete(&created_value["id"]).assert_no_content();
+    client
+        .delete(None, &created_value["id"])
+        .assert_no_content();
 }

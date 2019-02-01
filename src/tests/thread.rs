@@ -1,30 +1,7 @@
-use crate::{guid, tests::common::*};
+use crate::{guid, tests::common::*, tests::user_helpers::*};
 use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/thread";
-const USER_BASE: &str = "/v1/user";
-
-fn create_user() -> (i32, String) {
-    let response = Client::new(USER_BASE)
-        .post(
-            None,
-            json!({
-                "reddit_username": guid(),
-                "refresh_token": guid(),
-            }),
-        )
-        .assert_created()
-        .get_body_object();
-
-    (
-        response["id"].as_i64().unwrap() as i32,
-        response["token"].as_str().unwrap().to_owned(),
-    )
-}
-
-fn delete_user(user_id: i32) {
-    Client::new(USER_BASE).delete(user_id);
-}
 
 fn create_thread(client: &Client, _user_id: i32, token: String) -> Json {
     client
@@ -61,7 +38,7 @@ fn get_one() {
     assert_eq!(created_value, body);
 
     // teardown
-    client.delete(&body["id"]);
+    client.delete(None, &body["id"]);
     delete_user(user_id);
 }
 
@@ -112,7 +89,7 @@ fn create() {
     );
 
     // teardown
-    client.delete(id);
+    client.delete(None, id);
     delete_user(user_id);
 }
 
@@ -144,13 +121,13 @@ fn update() {
     // test
     let data = json!({ "spacex__api_id": guid() });
     let body = client
-        .patch(&created_value["id"], &data)
+        .patch(None, &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
     assert_eq!(body["spacex__api_id"], data["spacex__api_id"]);
 
     // teardown
-    client.delete(&created_value["id"]);
+    client.delete(None, &created_value["id"]);
     delete_user(user_id);
 }
 
@@ -163,6 +140,8 @@ fn delete() {
     let created_value = create_thread(&client, user_id, user_token);
 
     // test
-    client.delete(&created_value["id"]).assert_no_content();
+    client
+        .delete(None, &created_value["id"])
+        .assert_no_content();
     delete_user(user_id);
 }

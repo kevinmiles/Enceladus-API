@@ -1,4 +1,10 @@
-#![feature(proc_macro_hygiene, decl_macro, concat_idents, custom_attribute)]
+#![feature(
+    proc_macro_hygiene,
+    decl_macro,
+    concat_idents,
+    custom_attribute,
+    bind_by_move_pattern_guards
+)]
 #![deny(warnings, clippy::all)]
 #![allow(
     proc_macro_derive_resolution_fallback,

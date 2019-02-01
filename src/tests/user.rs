@@ -50,7 +50,7 @@ fn get_one() {
     );
 
     // teardown
-    client.delete(&created_value["id"]);
+    client.delete(None, &created_value["id"]);
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn create() {
     );
 
     // teardown
-    client.delete(id);
+    client.delete(None, id);
 }
 
 #[test]
@@ -105,7 +105,7 @@ fn update() {
     // test
     let data = json!({ "spacex__is_slack_member": true });
     let body = client
-        .patch(&created_value["id"], &data)
+        .patch(None, &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
     assert_eq!(
@@ -114,7 +114,7 @@ fn update() {
     );
 
     // teardown
-    client.delete(&created_value["id"]);
+    client.delete(None, &created_value["id"]);
 }
 
 #[test]
@@ -125,5 +125,7 @@ fn delete() {
     let created_value = create_user(&client);
 
     // test
-    client.delete(&created_value["id"]).assert_no_content();
+    client
+        .delete(None, &created_value["id"])
+        .assert_no_content();
 }

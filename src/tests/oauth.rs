@@ -32,5 +32,5 @@ fn returns_auth_data() {
     assert!(auth_data.contains_key("token"));
 
     // teardown
-    Client::new("/v1/user").delete(&auth_data["user_id"]);
+    Client::new("/v1/user").delete(None, &auth_data["user_id"]);
 }
