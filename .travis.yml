@@ -1,7 +1,7 @@
 language: rust
 
 rust:
-  - nightly-2018-12-15
+  - nightly-2019-01-26
 
 cache: cargo
 
@@ -11,6 +11,7 @@ install:
 
 before_script:
   - psql -c 'CREATE DATABASE test_db;' -U postgres
+  - cargo install diesel_cli --no-default-features --features=postgres
   - diesel migration run
 
 script:

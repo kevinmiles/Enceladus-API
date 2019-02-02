@@ -1,5 +1,4 @@
-#[macro_use]
-mod common;
+mod helpers;
 
 pub mod event;
 pub mod meta;
@@ -8,4 +7,3 @@ pub mod preset_event;
 pub mod section;
 pub mod thread;
 pub mod user;
-pub mod user_helpers;

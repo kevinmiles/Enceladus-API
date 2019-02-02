@@ -1,10 +1,11 @@
-use crate::tests::common::*;
+use crate::tests::helpers::*;
 use hashbrown::HashMap;
+use std::error::Error;
 use url::Url;
 
 #[test]
-fn returns_auth_data() {
-    let client = Client::new("");
+fn returns_auth_data() -> Result<(), Box<Error>> {
+    let mut client = Client::new();
 
     // Simulate what the server performs.
     // This functionality has been confirmed manually.
@@ -21,7 +22,7 @@ fn returns_auth_data() {
         .get_redirect_uri();
 
     // Confirm valid data on the client's perspective.
-    let response_url = Url::parse(&client_redirect).unwrap();
+    let response_url = Url::parse(&client_redirect)?;
     let auth_data: HashMap<_, _> = response_url.query_pairs().collect();
 
     // Ensure the appropriate keys are present.
@@ -32,5 +33,10 @@ fn returns_auth_data() {
     assert!(auth_data.contains_key("token"));
 
     // teardown
-    Client::new("/v1/user").delete(None, &auth_data["user_id"]);
+    user::delete(
+        &mut client,
+        auth_data["user_id"].clone().into_owned().parse()?,
+    );
+
+    Ok(())
 }

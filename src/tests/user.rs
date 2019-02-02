@@ -1,10 +1,11 @@
-use crate::{guid, tests::common::*};
+use crate::{guid, tests::helpers::*};
 use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/user";
 
-fn create_user(client: &Client) -> Json {
+fn create_user(client: &mut Client) -> Json {
     client
+        .with_base(BASE)
         .post(
             None,
             json!({
@@ -18,18 +19,23 @@ fn create_user(client: &Client) -> Json {
 
 #[test]
 fn get_all() {
-    Client::new(BASE).get_all().assert_ok().get_body_array();
+    Client::new()
+        .with_base(BASE)
+        .get_all()
+        .assert_ok()
+        .get_body_array();
 }
 
 #[test]
 fn get_one() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     // setup
-    let created_value = create_user(&client);
+    let created_value = create_user(&mut client);
 
     // test
     let body = client
+        .with_base(BASE)
         .get(&created_value["id"])
         .assert_ok()
         .get_body_object();
@@ -50,24 +56,28 @@ fn get_one() {
     );
 
     // teardown
-    client.delete(None, &created_value["id"]);
+    user::delete(&mut client, created_value["id"].as_i64().unwrap() as i32);
 }
 
 #[test]
 fn create() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     let user = json!({
         "reddit_username": guid(),
         "refresh_token": guid(),
     });
 
-    let mut body = client.post(None, &user).assert_created().get_body_object();
+    let mut body = client
+        .with_base(BASE)
+        .post(None, &user)
+        .assert_created()
+        .get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
     assert_eq!(body.get("refresh_token"), None);
 
     // store this so we can perform the teardown
-    let id = body["id"].as_i64().unwrap();
+    let id = body["id"].as_i64().unwrap() as i32;
 
     // Remove this, as we don't know what value we should expect.
     // Afterwards, we can ensure that the value is null.
@@ -88,15 +98,15 @@ fn create() {
     );
 
     // teardown
-    client.delete(None, id);
+    user::delete(&mut client, id);
 }
 
 #[test]
 fn update() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     // setup
-    let created_value = create_user(&client);
+    let created_value = create_user(&mut client);
     assert_eq!(
         created_value["spacex__is_slack_member"].as_bool(),
         Some(false)
@@ -105,27 +115,30 @@ fn update() {
     // test
     let data = json!({ "spacex__is_slack_member": true });
     let body = client
+        .with_base(BASE)
         .patch(None, &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
+
     assert_eq!(
         body["spacex__is_slack_member"],
-        data["spacex__is_slack_member"]
+        data["spacex__is_slack_member"],
     );
 
     // teardown
-    client.delete(None, &created_value["id"]);
+    user::delete(&mut client, created_value["id"].as_i64().unwrap() as i32)
 }
 
 #[test]
 fn delete() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     // setup
-    let created_value = create_user(&client);
+    let created_value = create_user(&mut client);
 
     // test
     client
+        .with_base(BASE)
         .delete(None, &created_value["id"])
         .assert_no_content();
 }

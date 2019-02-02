@@ -1,10 +1,11 @@
-use crate::{guid, tests::common::*, tests::user_helpers::*};
+use crate::{guid, tests::helpers::*};
 use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/thread";
 
-fn create_thread(client: &Client, _user_id: i32, token: String) -> Json {
+fn create_thread(client: &mut Client, token: String) -> Json {
     client
+        .with_base(BASE)
         .post(
             Some(token),
             json!({
@@ -19,33 +20,38 @@ fn create_thread(client: &Client, _user_id: i32, token: String) -> Json {
 
 #[test]
 fn get_all() {
-    Client::new(BASE).get_all().assert_ok().get_body_array();
+    Client::new()
+        .with_base(BASE)
+        .get_all()
+        .assert_ok()
+        .get_body_array();
 }
 
 #[test]
 fn get_one() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     // setup
-    let (user_id, user_token) = create_user();
-    let created_value = create_thread(&client, user_id, user_token);
+    let (user_id, user_token) = user::create(&mut client);
+    let created_value = create_thread(&mut client, user_token);
 
     // test
     let body = client
+        .with_base(BASE)
         .get(&created_value["id"])
         .assert_ok()
         .get_body_object();
     assert_eq!(created_value, body);
 
     // teardown
-    client.delete(None, &body["id"]);
-    delete_user(user_id);
+    client.with_base(BASE).delete(None, &body["id"]);
+    user::delete(&mut client, user_id);
 }
 
 #[test]
 fn create() {
-    let client = Client::new(BASE);
-    let (user_id, user_token) = create_user();
+    let mut client = Client::new();
+    let (user_id, user_token) = user::create(&mut client);
 
     let thread = json!({
         "thread_name": guid(),
@@ -57,6 +63,7 @@ fn create() {
     });
 
     let mut body = client
+        .with_base(BASE)
         .post(Some(user_token), &thread)
         .assert_created()
         .get_body_object();
@@ -89,14 +96,14 @@ fn create() {
     );
 
     // teardown
-    client.delete(None, id);
-    delete_user(user_id);
+    client.with_base(BASE).delete(None, id);
+    user::delete(&mut client, user_id);
 }
 
 #[test]
 #[should_panic]
 fn create_no_auth() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
     let thread = json!({
         "thread_name": guid(),
         "launch_name": guid(),
@@ -106,42 +113,44 @@ fn create_no_auth() {
         "spacex__api_id": guid(),
     });
 
-    client.post(None, &thread).assert_created();
+    client.with_base(BASE).post(None, &thread).assert_created();
 }
 
 #[test]
 fn update() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     // setup
-    let (user_id, user_token) = create_user();
-    let created_value = create_thread(&client, user_id, user_token);
+    let (user_id, user_token) = user::create(&mut client);
+    let created_value = create_thread(&mut client, user_token);
     assert_eq!(created_value["spacex__api_id"].as_str(), None);
 
     // test
     let data = json!({ "spacex__api_id": guid() });
     let body = client
+        .with_base(BASE)
         .patch(None, &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
     assert_eq!(body["spacex__api_id"], data["spacex__api_id"]);
 
     // teardown
-    client.delete(None, &created_value["id"]);
-    delete_user(user_id);
+    client.with_base(BASE).delete(None, &created_value["id"]);
+    user::delete(&mut client, user_id);
 }
 
 #[test]
 fn delete() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     // setup
-    let (user_id, user_token) = create_user();
-    let created_value = create_thread(&client, user_id, user_token);
+    let (user_id, user_token) = user::create(&mut client);
+    let created_value = create_thread(&mut client, user_token);
 
     // test
     client
+        .with_base(BASE)
         .delete(None, &created_value["id"])
         .assert_no_content();
-    delete_user(user_id);
+    user::delete(&mut client, user_id);
 }

@@ -13,11 +13,17 @@ pub struct Client<'a> {
 
 impl<'a> Client<'a> {
     #[inline]
-    pub fn new(base: &'a str) -> Self {
+    pub fn new() -> Self {
         Client {
-            base,
+            base: "",
             client: RocketClient::new(server()).expect("invalid rocket instance"),
         }
+    }
+
+    #[inline]
+    pub fn with_base(&mut self, base: &'a str) -> &Self {
+        self.base = base;
+        self
     }
 
     #[inline]

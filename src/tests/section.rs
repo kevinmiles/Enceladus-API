@@ -1,10 +1,11 @@
-use crate::{guid, tests::common::*};
+use crate::{guid, tests::helpers::*};
 use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/section";
 
-fn create_section(client: &Client) -> Json {
+fn create_section(client: &mut Client) -> Json {
     client
+        .with_base(BASE)
         .post(
             None,
             json!({
@@ -17,30 +18,35 @@ fn create_section(client: &Client) -> Json {
 
 #[test]
 fn get_all() {
-    Client::new(BASE).get_all().assert_ok().get_body_array();
+    Client::new()
+        .with_base(BASE)
+        .get_all()
+        .assert_ok()
+        .get_body_array();
 }
 
 #[test]
 fn get_one() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     // setup
-    let created_value = create_section(&client);
+    let created_value = create_section(&mut client);
 
     // test
     let body = client
+        .with_base(BASE)
         .get(&created_value["id"])
         .assert_ok()
         .get_body_object();
     assert_eq!(created_value, body);
 
     // teardown
-    client.delete(None, &created_value["id"]);
+    client.with_base(BASE).delete(None, &created_value["id"]);
 }
 
 #[test]
 fn create() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     let section = json!({
         "name": guid(),
@@ -49,6 +55,7 @@ fn create() {
     });
 
     let mut body = client
+        .with_base(BASE)
         .post(None, &section)
         .assert_created()
         .get_body_object();
@@ -73,38 +80,40 @@ fn create() {
     );
 
     // teardown
-    client.delete(None, id);
+    client.with_base(BASE).delete(None, id);
 }
 
 #[test]
 fn update() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     // setup
-    let created_value = create_section(&client);
+    let created_value = create_section(&mut client);
     assert_eq!(created_value["name"].as_str(), Some(""));
 
     // test
     let data = json!({ "name": guid() });
     let body = client
+        .with_base(BASE)
         .patch(None, &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
     assert_eq!(body["name"], data["name"]);
 
     // teardown
-    client.delete(None, &created_value["id"]);
+    client.with_base(BASE).delete(None, &created_value["id"]);
 }
 
 #[test]
 fn delete() {
-    let client = Client::new(BASE);
+    let mut client = Client::new();
 
     // setup
-    let created_value = create_section(&client);
+    let created_value = create_section(&mut client);
 
     // test
     client
+        .with_base(BASE)
         .delete(None, &created_value["id"])
         .assert_no_content();
 }
