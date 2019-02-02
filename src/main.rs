@@ -1,17 +1,6 @@
-#![feature(
-    proc_macro_hygiene,
-    decl_macro,
-    concat_idents,
-    custom_attribute,
-    bind_by_move_pattern_guards
-)]
-#![deny(warnings, clippy::all)]
-#![allow(
-    proc_macro_derive_resolution_fallback,
-    unused_attributes,
-    intra_doc_link_resolution_failure,
-    clippy::match_bool
-)]
+#![feature(proc_macro_hygiene, decl_macro, concat_idents, custom_attribute)]
+#![deny(clippy::all)]
+#![allow(intra_doc_link_resolution_failure, clippy::match_bool)]
 
 #[macro_use]
 extern crate diesel;

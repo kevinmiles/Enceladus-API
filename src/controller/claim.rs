@@ -10,6 +10,7 @@ pub struct Claim {
 }
 
 impl Claim {
+    #[inline]
     pub fn new(user_id: i32) -> Claim {
         Claim {
             user_id,
@@ -17,6 +18,7 @@ impl Claim {
         }
     }
 
+    #[inline]
     pub fn encode(&self) -> Result<String, jsonwebtoken::errors::Error> {
         jwt::encode(
             &jwt::Header::default(),
@@ -25,6 +27,7 @@ impl Claim {
         )
     }
 
+    #[inline]
     pub fn get_user_id(token: &str) -> Result<i32, jsonwebtoken::errors::Error> {
         let validation = jwt::Validation {
             validate_iat: true,

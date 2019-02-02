@@ -13,9 +13,11 @@ impl<'a, 'r> FromRequest<'a, 'r> for GlobalAdmin {
 
     #[inline]
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        match request.guard::<User>().succeeded() {
-            Some(user) if user.is_global_admin => Outcome::Success(GlobalAdmin(user)),
-            _ => Outcome::Failure((
+        let user = request.guard::<User>()?;
+
+        match user.is_global_admin {
+            true => Outcome::Success(GlobalAdmin(user)),
+            false => Outcome::Failure((
                 Status::Unauthorized,
                 "Must be authenticated as a global admin to access this endpoint.",
             )),
