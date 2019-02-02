@@ -3,7 +3,7 @@ use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/thread";
 
-fn create_thread(client: &mut Client, token: String) -> Json {
+fn create_thread(client: &mut Client, token: &str) -> Json {
     client
         .with_base(BASE)
         .post(
@@ -33,7 +33,7 @@ fn get_one() {
 
     // setup
     let (user_id, user_token) = user::create(&mut client);
-    let created_value = create_thread(&mut client, user_token);
+    let created_value = create_thread(&mut client, &user_token);
 
     // test
     let body = client
@@ -64,7 +64,7 @@ fn create() {
 
     let mut body = client
         .with_base(BASE)
-        .post(Some(user_token), &thread)
+        .post(Some(&user_token), &thread)
         .assert_created()
         .get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
@@ -122,7 +122,7 @@ fn update() {
 
     // setup
     let (user_id, user_token) = user::create(&mut client);
-    let created_value = create_thread(&mut client, user_token);
+    let created_value = create_thread(&mut client, &user_token);
     assert_eq!(created_value["spacex__api_id"].as_str(), None);
 
     // test
@@ -145,7 +145,7 @@ fn delete() {
 
     // setup
     let (user_id, user_token) = user::create(&mut client);
-    let created_value = create_thread(&mut client, user_token);
+    let created_value = create_thread(&mut client, &user_token);
 
     // test
     client

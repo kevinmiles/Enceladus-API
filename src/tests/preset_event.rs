@@ -7,7 +7,7 @@ fn create_preset_event(client: &mut Client, token: &str) -> Json {
     client
         .with_base(BASE)
         .post(
-            Some(token.to_owned()),
+            Some(token),
             json!({
                 "message": guid(),
                 "name": guid(),
@@ -43,7 +43,9 @@ fn get_one() {
     assert_eq!(created_value, body);
 
     // teardown
-    client.with_base(BASE).delete(None, &body["id"]);
+    client
+        .with_base(BASE)
+        .delete(Some(&user_token), &created_value["id"]);
     user::delete(&mut client, user_id);
 }
 
@@ -59,7 +61,7 @@ fn create() {
 
     let mut body = client
         .with_base(BASE)
-        .post(Some(user_token), &event)
+        .post(Some(&user_token), &event)
         .assert_created()
         .get_body_object();
     assert!(body["id"].is_number(), r#"body["id"] is number"#);
@@ -81,7 +83,7 @@ fn create() {
     );
 
     // teardown
-    client.with_base(BASE).delete(None, id);
+    client.with_base(BASE).delete(Some(&user_token), id);
     user::delete(&mut client, user_id);
 }
 
@@ -99,13 +101,15 @@ fn update() {
 
     let body = client
         .with_base(BASE)
-        .patch(Some(user_token), &created_value["id"], &data)
+        .patch(Some(&user_token), &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
     assert_eq!(body["holds_clock"], data["holds_clock"]);
 
     // teardown
-    client.with_base(BASE).delete(None, &body["id"]);
+    client
+        .with_base(BASE)
+        .delete(Some(&user_token), &created_value["id"]);
     user::delete(&mut client, user_id);
 }
 
@@ -120,7 +124,7 @@ fn delete() {
     // test
     client
         .with_base(BASE)
-        .delete(Some(user_token), &created_value["id"])
+        .delete(Some(&user_token), &created_value["id"])
         .assert_no_content();
     user::delete(&mut client, user_id);
 }

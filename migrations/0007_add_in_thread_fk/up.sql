@@ -1,0 +1,11 @@
+ALTER TABLE section
+ADD CONSTRAINT in_thread_fk
+FOREIGN KEY (in_thread_id)
+REFERENCES thread
+ON DELETE RESTRICT;
+
+ALTER TABLE event
+ADD CONSTRAINT in_thread_fk
+FOREIGN KEY (in_thread_id)
+REFERENCES thread
+ON DELETE RESTRICT;

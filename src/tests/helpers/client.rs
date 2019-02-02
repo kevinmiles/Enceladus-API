@@ -42,7 +42,7 @@ impl<'a> Client<'a> {
     }
 
     #[inline]
-    pub fn post(&self, token: Option<String>, body: impl ToString) -> Response {
+    pub fn post(&self, token: Option<&str>, body: impl ToString) -> Response {
         Response(match token {
             Some(token) => self
                 .client
@@ -59,7 +59,7 @@ impl<'a> Client<'a> {
     }
 
     #[inline]
-    pub fn patch(&self, token: Option<String>, id: impl ToString, body: impl ToString) -> Response {
+    pub fn patch(&self, token: Option<&str>, id: impl ToString, body: impl ToString) -> Response {
         Response(match token {
             Some(token) => self
                 .client
@@ -76,7 +76,7 @@ impl<'a> Client<'a> {
     }
 
     #[inline]
-    pub fn delete(&self, token: Option<String>, id: impl ToString) -> Response {
+    pub fn delete(&self, token: Option<&str>, id: impl ToString) -> Response {
         Response(match token {
             Some(token) => self
                 .client
