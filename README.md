@@ -15,14 +15,13 @@ To clone this repository,
 run `git clone git@github.com:r-spacex/Enceladus-API-rs.git`.
 
 Once inside the repository,
-you can build a binary for development with `cargo build`,
-which will have all user endpoints enabled.
-For release (which has certain endpoints disabled and optimizations enabled),
+you can build a binary for development with `cargo build`.
+For release (which has optimizations enabled),
 run `cargo build --release`.
 The resulting binaries will be `./target/debug/enceladus-api` and `./target/release/enceladus-api` respectively.
 
 Please note that the release build is identical to the debug build,
-with the exception of certain User endpoints being disabled.
+with the only difference being in performance.
 As such, it is highly recommended to only build with the `--release` flag when necessary.
 On my laptop, the release build takes approximately 7 minutes from scratch.
 

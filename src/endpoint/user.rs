@@ -1,23 +1,39 @@
 #![allow(non_snake_case)]
 
+use crate::controller::user::User;
+
+#[cfg(test)]
 use crate::{
     controller::{
         claim::Claim,
-        user::{InsertUser, UpdateUser, User},
+        user::{InsertUser, UpdateUser},
     },
     endpoint::helpers::RocketResult,
     DataDB,
 };
+
+#[cfg(test)]
 use rocket::{post, response::status::Created};
+
+#[cfg(test)]
 use rocket_contrib::json::Json;
+
+#[cfg(test)]
 use serde::Serialize;
+
+#[cfg(test)]
 use std::convert::From;
 
 generic_all!(User);
 generic_get!(User);
+
+#[cfg(test)]
 generic_patch!(User);
+
+#[cfg(test)]
 generic_delete!(User);
 
+#[cfg(test)]
 #[inline]
 #[post("/", data = "<data>")]
 pub fn post(conn: DataDB, data: Json<InsertUser>) -> RocketResult<Created<Json<TokenUser>>> {
@@ -26,6 +42,7 @@ pub fn post(conn: DataDB, data: Json<InsertUser>) -> RocketResult<Created<Json<T
 
 // There's no need to use this elsewhere,
 // as this struct exists solely to make testing easier.
+#[cfg(test)]
 #[derive(Serialize)]
 pub struct TokenUser {
     token: String,
@@ -38,6 +55,7 @@ pub struct TokenUser {
     spacex__is_slack_member: bool,
 }
 
+#[cfg(test)]
 impl From<User> for TokenUser {
     fn from(user: User) -> TokenUser {
         TokenUser {

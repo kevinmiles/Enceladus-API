@@ -48,10 +48,10 @@ pub fn server() -> Rocket {
         .mount("/oauth", routes![oauth::oauth, oauth::callback])
         .mount(
             "/v1/user",
-            match cfg!(debug_assertions) {
-                true => all_routes!(user),
-                false => routes![user::all, user::get],
-            },
+            #[cfg(test)]
+            all_routes!(user),
+            #[cfg(not(test))]
+            routes![user::all, user::get],
         )
         .mount("/v1/preset_event", all_routes!(preset_event))
         .mount("/v1/thread", all_routes!(thread))

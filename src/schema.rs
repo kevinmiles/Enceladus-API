@@ -58,6 +58,7 @@ table! {
     }
 }
 
+joinable!(section -> user (lock_held_by_user_id));
 joinable!(thread -> user (created_by_user_id));
 
 allow_tables_to_appear_in_same_query!(
