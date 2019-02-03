@@ -5,47 +5,25 @@ use crate::{
     Database,
 };
 use enceladus_macros::generate_structs;
-use hashbrown::HashMap;
 use lazy_static::lazy_static;
-use parking_lot::RwLock;
+use lru_cache::LruCache;
+use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use serde::Deserialize;
 
 lazy_static! {
-    /// A global cache, containing a mapping of IDs to their respective `Thread`.
+    /// A global cache, containing a mapping of IDs to their respective `Event`.
     ///
-    /// The cache is protected by a `RwLock`,
-    /// ensuring there is only ever at most one writer (and no readers) at a point in time.
+    /// The cache is protected by a `Mutex`,
+    /// ensuring there is only ever at most one writer at a time.
+    /// Note that even when reading,
+    /// there must be a lock on mutability,
+    /// as the `LruCache` must be able to update itself.
     ///
     /// To read from the cache,
-    /// you'll want to call `CACHE.read()` before performing normal operations.
-    /// The same is true for `CACHE.write()`.
-    ///
-    /// It is _highly_ recommended to manually call `drop()` after you're done using the lock.
-    /// This ensures that nothing else is blocked from accessing the cache if necessary.
-    ///
-    /// Here's example of when this is necessary to ensure working code:
-    ///
-    /// ```rust
-    /// // Obtain a read lock on the global cache.
-    /// let cache = CACHE.read();
-    ///
-    /// if cache.contains_key("foo") {
-    ///     // Do something with the value.
-    ///     cache["foo"]
-    /// } else {
-    ///     // Manually drop the `cache` variable,
-    ///     // letting us obtain a write lock.
-    ///     std::mem::drop(cache);
-    ///
-    ///     // Now we can obtain a write lock without having to wait
-    ///     // for the read lock to be dropped automatically.
-    ///     // Note that this _would not happen_ until _after_ the request for the write lock,
-    ///     // causing a deadlock in the code not caught by the compiler.
-    ///     CACHE.write().insert("foo", "bar");
-    /// }
+    /// you'll want to call `CACHE.lock()` before performing normal operations.
     /// ```
-    static ref CACHE: RwLock<HashMap<i32, Thread>> = RwLock::new(HashMap::new());
+    static ref CACHE: Mutex<LruCache<i32, Thread>> = Mutex::new(LruCache::new(5));
 }
 
 generate_structs! {
@@ -92,16 +70,12 @@ impl Thread {
     /// Internally uses a cache to limit database accesses.
     #[inline]
     pub fn find_id(conn: &Database, thread_id: i32) -> QueryResult<Self> {
-        let cache = CACHE.read();
+        let mut cache = CACHE.lock();
         if cache.contains_key(&thread_id) {
-            Ok(cache[&thread_id].clone())
+            Ok(cache.get_mut(&thread_id).unwrap().clone())
         } else {
-            // drop the read lock on the cache,
-            // ensuring we can call `CACHE.write()` without issue
-            std::mem::drop(cache);
-
             let result: Self = thread.find(thread_id).first(conn)?;
-            CACHE.write().insert(thread_id, result.clone());
+            cache.insert(thread_id, result.clone());
             Ok(result)
         }
     }
@@ -127,7 +101,7 @@ impl Thread {
         let result: Self = diesel::insert_into(thread)
             .values(insertable_thread)
             .get_result(conn)?;
-        CACHE.write().insert(result.id, result.clone());
+        CACHE.lock().insert(result.id, result.clone());
         Ok(result)
     }
 
@@ -140,7 +114,7 @@ impl Thread {
             .filter(id.eq(thread_id))
             .set(data)
             .get_result(conn)?;
-        CACHE.write().insert(result.id, result.clone());
+        CACHE.lock().insert(result.id, result.clone());
         Ok(result)
     }
 
@@ -149,7 +123,7 @@ impl Thread {
     /// Removes the entry from cache and returns the number of rows deleted (should be `1`).
     #[inline]
     pub fn delete(conn: &Database, thread_id: i32) -> QueryResult<usize> {
-        CACHE.write().remove(&thread_id);
+        CACHE.lock().remove(&thread_id);
         diesel::delete(thread)
             .filter(id.eq(thread_id))
             .execute(conn)
