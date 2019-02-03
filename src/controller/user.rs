@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use crate::{
-    controller::claim::Claim,
+    controller::{claim::Claim, thread::Thread},
     schema::user::{self, dsl::*},
     DataDB, Database,
 };
@@ -67,6 +67,57 @@ generate_structs! {
 }
 
 impl User {
+    /// Check if the user is an admin of a given subreddit.
+    ///
+    /// This is necessary, as Rust gives us no other way of
+    /// accessing fields dynamically at runtime.
+    #[inline]
+    pub fn is_admin_of(&self, subreddit: &str) -> bool {
+        match subreddit {
+            "spacex" => self.spacex__is_admin,
+            _ => false,
+        }
+    }
+
+    /// Is the provided user able to modify data (including sections and events)
+    /// on the indicated thread?
+    ///
+    /// Authentication levels (from low to high):
+    ///
+    /// - None
+    /// - Logged in (everyday user)
+    /// - Thread author
+    /// - Subreddit admin
+    /// - Global admin
+    ///
+    /// This function verifies that a user is, at a minimum, the thread author.
+    #[inline]
+    pub fn can_modify_thread(&self, conn: &DataDB, thread_id: i32) -> bool {
+        // Global admins can change anything.
+        if self.is_global_admin {
+            return true;
+        }
+
+        let thread = {
+            let thread = Thread::find_id(conn, thread_id);
+
+            // The thread we want to add the event to doesn't exist.
+            if thread.is_err() {
+                return false;
+            }
+
+            thread.unwrap()
+        };
+
+        // The user is a local admin.
+        if self.is_admin_of(&thread.subreddit) {
+            return true;
+        }
+
+        // The user is the thread creator.
+        thread.created_by_user_id == self.id
+    }
+
     /// Find all `User`s in the database.
     ///
     /// Does _not_ use cache (reading or writing),
