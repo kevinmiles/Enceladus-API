@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 use lru_cache::LruCache;
 use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+use serde::Deserialize;
 
 lazy_static! {
     /// A global cache, containing a mapping of IDs to their respective `Event`.
@@ -19,7 +20,6 @@ lazy_static! {
     ///
     /// To read from the cache,
     /// you'll want to call `CACHE.lock()` before performing normal operations.
-    /// ```
     static ref CACHE: Mutex<LruCache<i32, Section>> = Mutex::new(LruCache::new(50));
 }
 
@@ -29,9 +29,17 @@ generate_structs! {
         readonly is_events_section: bool = false,
         name: String = "",
         content: String = "",
-        lock_held_by_user_id: Option<i32>,
+        // not actually auto, but updates are handled by a different struct
+        auto lock_held_by_user_id: Option<i32>,
         readonly in_thread_id: i32,
     }
+}
+
+#[derive(AsChangeset, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[table_name = "section"]
+pub struct LockSection {
+    pub lock_held_by_user_id: Option<i32>,
 }
 
 impl Section {
@@ -74,6 +82,20 @@ impl Section {
     /// The entry is updated in the database, added to cache, and returned.
     #[inline]
     pub fn update(conn: &Database, section_id: i32, data: &UpdateSection) -> QueryResult<Self> {
+        let result: Self = diesel::update(section)
+            .filter(id.eq(section_id))
+            .set(data)
+            .get_result(conn)?;
+        CACHE.lock().insert(result.id, result.clone());
+        Ok(result)
+    }
+
+    /// Set a lock on a `Section`.
+    /// Integrity and authority to perform this action is _not_ verified here.
+    ///
+    /// The entry is updated in the database, added to cache, and returned.
+    #[inline]
+    pub fn set_lock(conn: &Database, section_id: i32, data: &LockSection) -> QueryResult<Self> {
         let result: Self = diesel::update(section)
             .filter(id.eq(section_id))
             .set(data)
