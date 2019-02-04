@@ -54,7 +54,17 @@ pub fn server() -> Rocket {
             routes![user::all, user::get],
         )
         .mount("/v1/preset_event", all_routes!(preset_event))
-        .mount("/v1/thread", all_routes!(thread))
+        .mount(
+            "/v1/thread",
+            routes![
+                thread::all,
+                thread::get,
+                thread::get_full,
+                thread::post,
+                thread::patch,
+                thread::delete,
+            ],
+        )
         .mount("/v1/section", all_routes!(section))
         .mount("/v1/event", all_routes!(event))
 }

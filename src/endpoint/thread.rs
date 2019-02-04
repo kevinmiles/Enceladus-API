@@ -6,11 +6,19 @@ use crate::{
     endpoint::helpers::RocketResult,
     DataDB,
 };
-use rocket::{delete, http::Status, patch, post, response::status::Created};
-use rocket_contrib::json::Json;
+use rocket::{delete, get, http::Status, patch, post, response::status::Created};
+use rocket_contrib::json::{Json, JsonValue};
 
 generic_all!(Thread);
 generic_get!(Thread);
+
+#[inline]
+#[get("/<id>/full")]
+pub fn get_full(conn: DataDB, id: i32) -> RocketResult<JsonValue> {
+    Ok(Thread::find_id_with_foreign_keys(&conn, id)
+        .map_err(crate::endpoint::helpers::error_mapper)?
+        .into())
+}
 
 #[inline]
 #[post("/", data = "<data>")]

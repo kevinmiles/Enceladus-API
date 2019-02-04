@@ -1,6 +1,6 @@
 /// Generate an endpoint for fetching all of the provided type.
 ///
-/// This macro should suffice for most, if not all, types.
+/// This macro should suffice for all types.
 #[macro_export]
 macro_rules! generic_all {
     ($x:ident) => {
@@ -16,7 +16,7 @@ macro_rules! generic_all {
 
 /// Generate an endpoint for fetching a specific instance of the provided type.
 ///
-/// This macro should suffice for any type not requiring user-provided JOINs.
+/// This macro should suffice for all types.
 #[macro_export]
 macro_rules! generic_get {
     ($x:ident) => {
@@ -27,26 +27,6 @@ macro_rules! generic_get {
             id: i32,
         ) -> crate::endpoint::helpers::RocketResult<rocket_contrib::json::Json<$x>> {
             json_result!($x::find_id(&conn, id))
-        }
-    };
-}
-
-/// Generate an endpoint for creating an instance of the provided type.
-///
-/// This macro should suffice whenever the type does not require
-/// any additional checking of parameters or other consideration.
-#[macro_export]
-macro_rules! generic_post {
-    ($x:ident) => {
-        #[inline]
-        #[rocket::post("/", data = "<data>")]
-        pub fn post(
-            conn: crate::DataDB,
-            data: rocket_contrib::json::Json<concat_idents!(Insert, $x)>,
-        ) -> crate::endpoint::helpers::RocketResult<
-            rocket::response::status::Created<rocket_contrib::json::Json<$x>>,
-        > {
-            created!($x::create(&conn, &data))
         }
     };
 }

@@ -10,6 +10,7 @@ use lru_cache::LruCache;
 use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use serde::Deserialize;
+use serde_json::{json, value::Value as Json};
 
 lazy_static! {
     /// A global cache, containing a mapping of IDs to their respective `Event`.
@@ -63,6 +64,51 @@ impl Thread {
     #[inline]
     pub fn find_all(conn: &Database) -> QueryResult<Vec<Self>> {
         thread.load(conn)
+    }
+
+    /// Find a given `Thread` by its ID,
+    /// joined with its `Section`s, `Event`s,
+    /// each section's lock `User`, and the thread's created-by `User`.
+    ///
+    /// Note that this _does not_ query the database directly,
+    /// so as to take advantage of cache wherever possible.
+    /// Additionally, directly querying the database would make it more difficult
+    /// to preserve the tree structure of the result.
+    #[inline]
+    pub fn find_id_with_foreign_keys(conn: &Database, thread_id: i32) -> QueryResult<Json> {
+        use crate::controller::{event::Event, section::Section, user::User};
+
+        // Get the values, represented as normal structs.
+        // For sections, we also add the relation to `User`,
+        // so we represent those as raw, untyped JSON values.
+        let raw_thread = Thread::find_id(conn, thread_id)?;
+        let created_by_user = User::find_id(conn, raw_thread.created_by_user_id)?;
+        let sections: Vec<_> = raw_thread
+            .sections_id
+            .iter()
+            .map(|section_id| Section::find_id(conn, *section_id).unwrap())
+            .map(|section| {
+                let user_id = section.lock_held_by_user_id;
+                let mut section = serde_json::to_value(section).unwrap();
+                section["lock_held_by_user"] = user_id.map_or(json!(null), |user_id| {
+                    serde_json::to_value(User::find_id(conn, user_id).unwrap()).unwrap()
+                });
+                section
+            })
+            .collect();
+        let events: Vec<_> = raw_thread
+            .events_id
+            .iter()
+            .map(|event_id| Event::find_id(conn, *event_id).unwrap())
+            .collect();
+
+        // Convert the values to JSON,
+        let mut thread_json = serde_json::to_value(raw_thread).unwrap();
+        thread_json["created_by_user"] = serde_json::to_value(created_by_user).unwrap();
+        thread_json["sections"] = serde_json::to_value(sections).unwrap();
+        thread_json["events"] = serde_json::to_value(events).unwrap();
+
+        Ok(thread_json)
     }
 
     /// Find a given `Thread` by its ID.
