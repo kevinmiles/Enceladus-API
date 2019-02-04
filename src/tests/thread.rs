@@ -44,7 +44,9 @@ fn get_one() {
     assert_eq!(created_value, body);
 
     // teardown
-    client.with_base(BASE).delete(None, &body["id"]);
+    client
+        .with_base(BASE)
+        .delete(Some(&user_token), &body["id"]);
     user::delete(&mut client, user_id);
 }
 
@@ -96,7 +98,7 @@ fn create() {
     );
 
     // teardown
-    client.with_base(BASE).delete(None, id);
+    client.with_base(BASE).delete(Some(&user_token), id);
     user::delete(&mut client, user_id);
 }
 
@@ -129,13 +131,15 @@ fn update() {
     let data = json!({ "spacex__api_id": guid() });
     let body = client
         .with_base(BASE)
-        .patch(None, &created_value["id"], &data)
+        .patch(Some(&user_token), &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
     assert_eq!(body["spacex__api_id"], data["spacex__api_id"]);
 
     // teardown
-    client.with_base(BASE).delete(None, &created_value["id"]);
+    client
+        .with_base(BASE)
+        .delete(Some(&user_token), &created_value["id"]);
     user::delete(&mut client, user_id);
 }
 
@@ -150,7 +154,7 @@ fn delete() {
     // test
     client
         .with_base(BASE)
-        .delete(None, &created_value["id"])
+        .delete(Some(&user_token), &created_value["id"])
         .assert_no_content();
     user::delete(&mut client, user_id);
 }

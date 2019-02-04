@@ -102,7 +102,7 @@ fn update() {
     let data = json!({ "name": guid() });
     let body = client
         .with_base(BASE)
-        .patch(None, &created_value["id"], &data)
+        .patch(Some(&user_token), &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
     assert_eq!(body["name"], data["name"]);
