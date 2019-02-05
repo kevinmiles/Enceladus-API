@@ -8,6 +8,7 @@ use crate::{
 };
 use rocket::{delete, get, http::Status, patch, post, response::status::Created};
 use rocket_contrib::json::{Json, JsonValue};
+use std::collections::BTreeSet;
 
 generic_all!(Thread);
 generic_get!(Thread);
@@ -38,11 +39,35 @@ pub fn patch(
     id: i32,
     data: Json<UpdateThread>,
 ) -> RocketResult<Json<Thread>> {
-    if user.can_modify_thread(&conn, id) {
-        return json_result!(Thread::update(&conn, id, &data));
+    if !user.can_modify_thread(&conn, id) {
+        return Err(Status::Unauthorized);
     }
 
-    Err(Status::Unauthorized)
+    // Restrict changing `.sections_id` to reordering, not adding or removing.
+    if data.sections_id.is_some() {
+        let current_thread = Thread::find_id(&conn, id).unwrap();
+
+        let current_sections: BTreeSet<_> = current_thread.sections_id.iter().collect();
+        let proposed_sections: BTreeSet<_> = data.sections_id.as_ref().unwrap().iter().collect();
+
+        if current_sections != proposed_sections {
+            return Err(Status::PreconditionFailed);
+        }
+    }
+
+    // Restrict changing `.events_id` to reordering, not adding or removing.
+    if data.events_id.is_some() {
+        let current_thread = Thread::find_id(&conn, id).unwrap();
+
+        let current_events: BTreeSet<_> = current_thread.events_id.iter().collect();
+        let proposed_events: BTreeSet<_> = data.events_id.as_ref().unwrap().iter().collect();
+
+        if current_events != proposed_events {
+            return Err(Status::PreconditionFailed);
+        }
+    }
+
+    return json_result!(Thread::update(&conn, id, &data));
 }
 
 #[inline]

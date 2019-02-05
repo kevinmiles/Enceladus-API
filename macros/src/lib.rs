@@ -172,7 +172,7 @@ pub fn generate_structs(item: TokenStream) -> TokenStream {
             #(#insert_fields),*
         }
 
-        #[derive(serde::Deserialize, rocket_contrib::databases::diesel::AsChangeset)]
+        #[derive(Default, serde::Deserialize, rocket_contrib::databases::diesel::AsChangeset)]
         #[table_name = #table]
         #[serde(deny_unknown_fields)]
         pub struct #update_name {

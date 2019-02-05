@@ -1,4 +1,5 @@
 use crate::{
+    controller::thread::{Thread, UpdateThread},
     schema::section::{self, dsl::*},
     Database,
 };
@@ -74,6 +75,19 @@ impl Section {
     pub fn create(conn: &Database, data: &InsertSection) -> QueryResult<Self> {
         let result: Self = diesel::insert_into(section).values(data).get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
+
+        // Add the section ID to the relevant Thread.
+        let mut thread = Thread::find_id(conn, data.in_thread_id)?;
+        thread.sections_id.push(result.id);
+        Thread::update(
+            conn,
+            data.in_thread_id,
+            &UpdateThread {
+                sections_id: Some(thread.sections_id),
+                ..Default::default()
+            },
+        )?;
+
         Ok(result)
     }
 
@@ -109,6 +123,17 @@ impl Section {
     /// Removes the entry from cache and returns the number of rows deleted (should be `1`).
     #[inline]
     pub fn delete(conn: &Database, section_id: i32) -> QueryResult<usize> {
+        let mut thread = Thread::find_id(conn, Section::find_id(conn, section_id)?.in_thread_id)?;
+        thread.sections_id.retain(|&cur_id| cur_id != section_id);
+        Thread::update(
+            conn,
+            thread.id,
+            &UpdateThread {
+                sections_id: Some(thread.sections_id),
+                ..Default::default()
+            },
+        )?;
+
         CACHE.lock().remove(&section_id);
         diesel::delete(section)
             .filter(id.eq(section_id))

@@ -1,4 +1,5 @@
 use crate::{
+    controller::thread::{Thread, UpdateThread},
     schema::event::{self, dsl::*},
     Database,
 };
@@ -66,6 +67,19 @@ impl Event {
     pub fn create(conn: &Database, data: &InsertEvent) -> QueryResult<Self> {
         let result: Self = diesel::insert_into(event).values(data).get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
+
+        // Add the event ID to the relevant Thread.
+        let mut thread = Thread::find_id(conn, data.in_thread_id)?;
+        thread.events_id.push(result.id);
+        Thread::update(
+            conn,
+            data.in_thread_id,
+            &UpdateThread {
+                events_id: Some(thread.events_id),
+                ..Default::default()
+            },
+        )?;
+
         Ok(result)
     }
 
@@ -87,6 +101,17 @@ impl Event {
     /// Removes the entry from cache and returns the number of rows deleted (should be `1`).
     #[inline]
     pub fn delete(conn: &Database, event_id: i32) -> QueryResult<usize> {
+        let mut thread = Thread::find_id(conn, Event::find_id(conn, event_id)?.in_thread_id)?;
+        thread.events_id.retain(|&cur_id| cur_id != event_id);
+        Thread::update(
+            conn,
+            thread.id,
+            &UpdateThread {
+                events_id: Some(thread.events_id),
+                ..Default::default()
+            },
+        )?;
+
         CACHE.lock().remove(&event_id);
         diesel::delete(event).filter(id.eq(event_id)).execute(conn)
     }
