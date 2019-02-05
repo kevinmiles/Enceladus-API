@@ -50,9 +50,9 @@ impl User {
     /// This is necessary, as Rust gives us no other way of
     /// accessing fields dynamically at runtime.
     #[inline]
-    pub fn is_admin_of(&self, subreddit: &str) -> bool {
+    pub fn is_admin_of(&self, subreddit: Option<&str>) -> bool {
         match subreddit {
-            "spacex" => self.spacex__is_admin,
+            Some("spacex") => self.spacex__is_admin,
             _ => false,
         }
     }
@@ -88,7 +88,7 @@ impl User {
         };
 
         // The user is a local admin.
-        if self.is_admin_of(&thread.subreddit) {
+        if self.is_admin_of(thread.subreddit.as_ref().map(|s| s.as_str())) {
             return true;
         }
 

@@ -1,0 +1,3 @@
+ALTER TABLE thread
+ALTER COLUMN subreddit
+DROP NOT NULL;

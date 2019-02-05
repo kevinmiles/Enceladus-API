@@ -33,7 +33,7 @@ generate_structs! {
         readonly thread_name: String,
         launch_name: String,
         readonly post_id: Option<String>,
-        readonly subreddit: String,
+        readonly subreddit: Option<String>,
         t0: Option<i64>,
         youtube_id: Option<String>,
         spacex__api_id: Option<String>,
@@ -50,7 +50,7 @@ generate_structs! {
 pub struct ExternalInsertThread {
     pub thread_name: String,
     pub launch_name: String,
-    pub subreddit: String,
+    pub subreddit: Option<String>,
     pub t0: Option<i64>,
     pub youtube_id: Option<String>,
     pub spacex__api_id: Option<String>,

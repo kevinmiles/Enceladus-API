@@ -11,7 +11,6 @@ fn create_thread(client: &mut Client, token: &str) -> Json {
             json!({
                 "thread_name": guid(),
                 "launch_name": guid(),
-                "subreddit": guid(),
             }),
         )
         .assert_created()
@@ -109,10 +108,6 @@ fn create_no_auth() {
     let thread = json!({
         "thread_name": guid(),
         "launch_name": guid(),
-        "subreddit": guid(),
-        "t0": rand::random::<i64>(),
-        "youtube_id": guid()[0..11],
-        "spacex__api_id": guid(),
     });
 
     client.with_base(BASE).post(None, &thread).assert_created();

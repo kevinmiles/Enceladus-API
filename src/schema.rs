@@ -35,7 +35,7 @@ table! {
         thread_name -> Varchar,
         launch_name -> Varchar,
         post_id -> Nullable<Varchar>,
-        subreddit -> Varchar,
+        subreddit -> Nullable<Varchar>,
         t0 -> Nullable<Int8>,
         youtube_id -> Nullable<Varchar>,
         spacex__api_id -> Nullable<Varchar>,
