@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use super::THREAD_CACHE_SIZE;
 use crate::{
     schema::thread::{self, dsl::*},
     Database,
@@ -24,7 +25,7 @@ lazy_static! {
     /// To read from the cache,
     /// you'll want to call `CACHE.lock()` before performing normal operations.
     /// ```
-    static ref CACHE: Mutex<LruCache<i32, Thread>> = Mutex::new(LruCache::new(5));
+    static ref CACHE: Mutex<LruCache<i32, Thread>> = Mutex::new(LruCache::new(THREAD_CACHE_SIZE));
 }
 
 generate_structs! {

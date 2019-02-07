@@ -1,5 +1,6 @@
 #![allow(non_snake_case)]
 
+use super::USER_CACHE_SIZE;
 use crate::{
     controller::{claim::Claim, thread::Thread},
     schema::user::{self, dsl::*},
@@ -28,7 +29,7 @@ lazy_static! {
     /// To read from the cache,
     /// you'll want to call `CACHE.lock()` before performing normal operations.
     /// ```
-    static ref CACHE: Mutex<LruCache<i32, User>> = Mutex::new(LruCache::new(100));
+    static ref CACHE: Mutex<LruCache<i32, User>> = Mutex::new(LruCache::new(USER_CACHE_SIZE));
 }
 
 generate_structs! {

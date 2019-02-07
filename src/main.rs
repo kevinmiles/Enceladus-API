@@ -1,12 +1,22 @@
-#![feature(proc_macro_hygiene, decl_macro, concat_idents, custom_attribute)]
+#![feature(
+    proc_macro_hygiene,
+    decl_macro,
+    concat_idents,
+    custom_attribute,
+    const_str_as_bytes
+)]
 #![deny(clippy::all)]
 #![allow(intra_doc_link_resolution_failure, clippy::match_bool)]
 
 #[macro_use]
 extern crate diesel;
 
+#[macro_use]
+extern crate dotenv_codegen;
+
 pub mod controller;
 pub mod endpoint;
+pub mod reddit;
 pub mod schema;
 
 #[cfg(test)]
@@ -39,6 +49,11 @@ pub fn guid() -> String {
 /// attaching middleware for security and database access.
 /// Routes are then mounted (some conditionally).
 pub fn server() -> Rocket {
+    // Although we inline most variables at compile-time,
+    // Rocket doesn't let us do this.
+    // As such, we have to load the `.env` file at runtime as well.
+    // **Do not** remove it from the build script,
+    // as we still want to inline wherever possible.
     dotenv().ok();
 
     rocket::ignite()

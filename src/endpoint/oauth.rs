@@ -3,11 +3,14 @@ use crate::{
         claim::Claim,
         user::{InsertUser, User},
     },
-    guid, DataDB,
+    guid,
+    reddit::RedditUser,
+    DataDB,
 };
+use request::Url;
+use reqwest as request;
 use rocket::{get, http::RawStr, response::Redirect, uri};
 use std::error::Error;
-use url::Url;
 
 // TODO store this data in cookies,
 // such that we can avoid going to reddit
@@ -20,18 +23,21 @@ use url::Url;
 /// in order to avoid any user input or external requests.
 #[inline]
 #[get("/?<callback>")]
-pub fn oauth(callback: &RawStr) -> Redirect {
+pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<Error>> {
     let callback = callback.to_string();
 
-    // We're testing; let's not bother with actual authentication.
-    // Instead, pretend it succeeded and immediately redirect to the callback.
     if cfg!(test) {
-        return Redirect::to(uri!("/oauth", callback: code = guid(), state = &callback));
+        // We're testing; let's not bother with actual authentication.
+        // Instead, pretend it succeeded and immediately redirect to the callback.
+        Ok(Redirect::to(uri!(
+            "/oauth",
+            callback: code = guid(),
+            state = &callback
+        )))
+    } else {
+        // Send the user off to Reddit for authentication
+        Ok(Redirect::to(RedditUser::get_auth_url(&callback)?))
     }
-
-    // TODO
-    // Send the user off to reddit for authentication
-    Redirect::to(uri!("/oauth", callback: code = guid(), state = &callback))
 }
 
 /// Handle the OAuth response from Reddit.
@@ -57,29 +63,17 @@ pub fn oauth(callback: &RawStr) -> Redirect {
 #[inline]
 #[get("/callback?<code>&<state>")]
 pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, Box<Error>> {
-    let original_callback = state;
-
-    // Find the user's username.
-    // Fake it if we're only testing.
-    let username = match cfg!(test) {
-        true => guid(),
-        false => guid(),
-    };
-
-    // Find the user's language preference.
-    // Fake it if we're only testing.
-    let lang = match cfg!(test) {
-        true => guid()[0..2].to_string(),
-        false => guid()[0..2].to_string(),
-    };
+    let reddit_user = RedditUser::obtain_refresh_token(&code)?;
+    let username = reddit_user.username()?;
+    let lang = reddit_user.lang()?;
 
     // Insert the user into our database.
     let user = User::create(
         &conn,
         &InsertUser {
-            reddit_username: username.to_string(),
-            lang: lang.to_string(),
-            refresh_token: code,
+            reddit_username: username.to_owned(),
+            lang: lang.to_owned(),
+            refresh_token: reddit_user.refresh_token.clone(),
             is_global_admin: false,
             spacex__is_admin: false,
             spacex__is_mod: false,
@@ -92,7 +86,7 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
 
     // Attach additional querystring parameters to the provided callback.
     let callback = Url::parse_with_params(
-        &original_callback,
+        &state, // The state doubles as our callback.
         &[
             ("user_id", &user.id.to_string()),
             ("username", &username),

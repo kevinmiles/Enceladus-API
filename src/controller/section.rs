@@ -1,3 +1,4 @@
+use super::SECTION_CACHE_SIZE;
 use crate::{
     controller::thread::{Thread, UpdateThread},
     schema::section::{self, dsl::*},
@@ -21,7 +22,7 @@ lazy_static! {
     ///
     /// To read from the cache,
     /// you'll want to call `CACHE.lock()` before performing normal operations.
-    static ref CACHE: Mutex<LruCache<i32, Section>> = Mutex::new(LruCache::new(50));
+    static ref CACHE: Mutex<LruCache<i32, Section>> = Mutex::new(LruCache::new(SECTION_CACHE_SIZE));
 }
 
 generate_structs! {

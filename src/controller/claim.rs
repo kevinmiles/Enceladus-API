@@ -1,7 +1,18 @@
 use chrono::Utc;
 use jsonwebtoken as jwt;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use std::env;
+
+lazy_static! {
+    static ref HEADER: jwt::Header = jwt::Header::default();
+    static ref VALIDATION: jwt::Validation = jwt::Validation {
+        validate_iat: true,
+        validate_exp: false,
+        ..jwt::Validation::default()
+    };
+}
+
+const ROCKET_SECRET_KEY: &[u8] = dotenv!("ROCKET_SECRET_KEY").as_bytes();
 
 #[derive(Serialize, Deserialize)]
 pub struct Claim {
@@ -20,26 +31,13 @@ impl Claim {
 
     #[inline]
     pub fn encode(&self) -> Result<String, jsonwebtoken::errors::Error> {
-        jwt::encode(
-            &jwt::Header::default(),
-            self,
-            env::var("ROCKET_SECRET_KEY").unwrap().as_bytes(),
-        )
+        jwt::encode(&HEADER, self, ROCKET_SECRET_KEY)
     }
 
     #[inline]
     pub fn get_user_id(token: &str) -> Result<i32, jsonwebtoken::errors::Error> {
-        let validation = jwt::Validation {
-            validate_iat: true,
-            validate_exp: false,
-            ..jwt::Validation::default()
-        };
-
-        jwt::decode::<Claim>(
-            token,
-            env::var("ROCKET_SECRET_KEY").unwrap().as_bytes(),
-            &validation,
-        )
-        .map(|data| data.claims.user_id)
+        Ok(jwt::decode::<Claim>(token, ROCKET_SECRET_KEY, &VALIDATION)?
+            .claims
+            .user_id)
     }
 }
