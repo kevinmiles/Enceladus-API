@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 
-use super::THREAD_CACHE_SIZE;
+use super::{ToMarkdown, THREAD_CACHE_SIZE};
 use crate::{
+    controller::section::Section,
     schema::thread::{self, dsl::*},
     Database,
 };
@@ -12,6 +13,7 @@ use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use serde::Deserialize;
 use serde_json::{json, value::Value as Json};
+use std::{error::Error, fmt::Write};
 
 lazy_static! {
     /// A global cache, containing a mapping of IDs to their respective `Event`.
@@ -174,5 +176,21 @@ impl Thread {
         diesel::delete(thread)
             .filter(id.eq(thread_id))
             .execute(conn)
+    }
+}
+
+impl ToMarkdown for Thread {
+    fn to_markdown(&self, conn: &Database) -> Result<String, Box<Error>> {
+        let mut md = String::new();
+
+        for &section_id in self.sections_id.iter() {
+            writeln!(
+                &mut md,
+                "{}\n",
+                Section::find_id(conn, section_id)?.to_markdown(conn)?
+            )?;
+        }
+
+        Ok(md)
     }
 }

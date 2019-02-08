@@ -1,6 +1,6 @@
-use super::SECTION_CACHE_SIZE;
+use super::{ToMarkdown, SECTION_CACHE_SIZE};
 use crate::{
-    controller::thread::{Thread, UpdateThread},
+    controller::{thread::{Thread, UpdateThread}, event::Event},
     schema::section::{self, dsl::*},
     Database,
 };
@@ -10,6 +10,7 @@ use lru_cache::LruCache;
 use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use serde::Deserialize;
+use std::{error::Error, fmt::Write};
 
 lazy_static! {
     /// A global cache, containing a mapping of IDs to their respective `Event`.
@@ -139,5 +140,33 @@ impl Section {
         diesel::delete(section)
             .filter(id.eq(section_id))
             .execute(conn)
+    }
+}
+
+impl ToMarkdown for Section {
+    #[inline]
+    fn to_markdown(&self, conn: &Database) -> Result<String, Box<Error>> {
+        let mut md = String::new();
+
+        writeln!(&mut md, "# {}", self.name)?;
+
+        if self.is_events_section {
+            writeln!(&mut md, "|UTC|Countdown|Update|")?;
+            writeln!(&mut md, "|---|---|---|")?;
+
+            let events = Thread::find_id(conn, self.in_thread_id)?.events_id;
+
+            for &event_id in events.iter() {
+                write!(
+                    &mut md,
+                    "{}",
+                    Event::find_id(conn, event_id)?.to_markdown(conn)?
+                )?;
+            }
+        } else {
+            write!(&mut md, "{}", self.content)?;
+        }
+
+        Ok(md)
     }
 }

@@ -1,14 +1,16 @@
-use super::EVENT_CACHE_SIZE;
+use super::{ToMarkdown, EVENT_CACHE_SIZE};
 use crate::{
     controller::thread::{Thread, UpdateThread},
-    schema::event::{self, dsl::*},
+    schema::event,
     Database,
 };
+use chrono::NaiveDateTime;
 use enceladus_macros::generate_structs;
 use lazy_static::lazy_static;
 use lru_cache::LruCache;
 use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+use std::{error::Error, fmt::Write};
 
 lazy_static! {
     /// A global cache, containing a mapping of IDs to their respective `Event`.
@@ -43,6 +45,8 @@ impl Event {
     /// so as to avoid storing values rarely accessed.
     #[inline]
     pub fn find_all(conn: &Database) -> QueryResult<Vec<Self>> {
+        use crate::schema::event::dsl::*;
+
         event.load(conn)
     }
 
@@ -51,6 +55,8 @@ impl Event {
     /// Internally uses a cache to limit database accesses.
     #[inline]
     pub fn find_id(conn: &Database, event_id: i32) -> QueryResult<Self> {
+        use crate::schema::event::dsl::*;
+
         let mut cache = CACHE.lock();
         if cache.contains_key(&event_id) {
             Ok(cache.get_mut(&event_id).unwrap().clone())
@@ -66,6 +72,8 @@ impl Event {
     /// The inserted row is added to the global cache and returned.
     #[inline]
     pub fn create(conn: &Database, data: &InsertEvent) -> QueryResult<Self> {
+        use crate::schema::event::dsl::*;
+
         let result: Self = diesel::insert_into(event).values(data).get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
 
@@ -89,6 +97,8 @@ impl Event {
     /// The entry is updated in the database, added to cache, and returned.
     #[inline]
     pub fn update(conn: &Database, event_id: i32, data: &UpdateEvent) -> QueryResult<Self> {
+        use crate::schema::event::dsl::*;
+
         let result: Self = diesel::update(event)
             .filter(id.eq(event_id))
             .set(data)
@@ -102,6 +112,8 @@ impl Event {
     /// Removes the entry from cache and returns the number of rows deleted (should be `1`).
     #[inline]
     pub fn delete(conn: &Database, event_id: i32) -> QueryResult<usize> {
+        use crate::schema::event::dsl::*;
+
         let mut thread = Thread::find_id(conn, Event::find_id(conn, event_id)?.in_thread_id)?;
         thread.events_id.retain(|&cur_id| cur_id != event_id);
         Thread::update(
@@ -115,5 +127,25 @@ impl Event {
 
         CACHE.lock().remove(&event_id);
         diesel::delete(event).filter(id.eq(event_id)).execute(conn)
+    }
+}
+
+impl ToMarkdown for Event {
+    #[inline]
+    fn to_markdown(&self, _conn: &Database) -> Result<String, Box<Error>> {
+        let mut md = String::new();
+
+        if self.posted {
+            let utc = NaiveDateTime::from_timestamp(self.utc, 0)
+                .time()
+                .format("%H:%M")
+                .to_string();
+            let terminal_count = &self.terminal_count;
+            let message = self.message.replace('\n', " ").replace('|', "\\|");
+
+            write!(&mut md, "|{}|{}|{}|\n", utc, terminal_count, message)?;
+        }
+
+        Ok(md)
     }
 }

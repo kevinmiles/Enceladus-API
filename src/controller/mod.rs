@@ -1,8 +1,14 @@
+use crate::Database;
+
 const EVENT_CACHE_SIZE: usize = 100;
 const PRESET_EVENT_CACHE_SIZE: usize = 100;
 const SECTION_CACHE_SIZE: usize = 50;
 const THREAD_CACHE_SIZE: usize = 5;
 const USER_CACHE_SIZE: usize = 100;
+
+pub trait ToMarkdown {
+    fn to_markdown(&self, conn: &Database) -> Result<String, Box<std::error::Error>>;
+}
 
 pub mod claim;
 pub mod event;
