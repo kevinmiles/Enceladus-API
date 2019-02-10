@@ -12,19 +12,25 @@ use quote::quote;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::iter;
 use syn::{
-    braced, parenthesized,
+    braced,
+    parenthesized,
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    token, Expr, Ident, Result, Token, Type,
+    token,
+    Expr,
+    Ident,
+    Result,
+    Token,
+    Type,
 };
 
 struct Declaration {
-    name: Ident,
-    _paren: token::Paren,
+    name:       Ident,
+    _paren:     token::Paren,
     table_name: Expr,
-    _brace: token::Brace,
-    fields: Punctuated<Field, Token![,]>,
+    _brace:     token::Brace,
+    fields:     Punctuated<Field, Token![,]>,
 }
 
 impl Parse for Declaration {
@@ -33,21 +39,21 @@ impl Parse for Declaration {
         let brace_content;
 
         Ok(Declaration {
-            name: input.parse()?,
-            _paren: parenthesized!(paren_content in input),
+            name:       input.parse()?,
+            _paren:     parenthesized!(paren_content in input),
             table_name: paren_content.parse()?,
-            _brace: braced!(brace_content in input),
-            fields: brace_content.parse_terminated(Field::parse)?,
+            _brace:     braced!(brace_content in input),
+            fields:     brace_content.parse_terminated(Field::parse)?,
         })
     }
 }
 
 struct Field {
     attribute: Option<Keyword>,
-    name: Ident,
-    _colon: Token![:],
-    typ: Type,
-    default: Option<Expr>,
+    name:      Ident,
+    _colon:    Token![:],
+    typ:       Type,
+    default:   Option<Expr>,
 }
 
 impl Parse for Field {
@@ -61,10 +67,10 @@ impl Parse for Field {
             } else {
                 None
             },
-            name: input.parse()?,
-            _colon: input.parse()?,
-            typ: input.parse()?,
-            default: if input.peek(Token![=]) {
+            name:      input.parse()?,
+            _colon:    input.parse()?,
+            typ:       input.parse()?,
+            default:   if input.peek(Token![=]) {
                 // throw away the `=` token
                 input.parse::<Token![=]>()?;
                 Some(input.parse()?)
@@ -158,7 +164,11 @@ pub fn generate_structs(item: TokenStream) -> TokenStream {
     TokenStream::from(quote! {
         #(#generated_fns)*
 
-        #[derive(Clone, serde::Serialize, serde::Deserialize, rocket_contrib::databases::diesel::Queryable)]
+        #[derive(
+            Clone,
+            serde::Serialize, serde::Deserialize,
+            rocket_contrib::databases::diesel::Queryable
+        )]
         #[table_name = #table]
         #[serde(deny_unknown_fields)]
         pub struct #name {

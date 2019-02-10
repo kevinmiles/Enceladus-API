@@ -13,7 +13,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for GlobalAdmin {
 
     #[inline]
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let user = request.guard::<User>()?;
+        let user: User = request.guard()?;
 
         match user.is_global_admin {
             true => Outcome::Success(GlobalAdmin(user)),

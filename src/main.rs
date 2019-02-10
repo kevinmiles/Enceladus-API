@@ -48,6 +48,7 @@ pub fn guid() -> String {
 /// Creates a server,
 /// attaching middleware for security and database access.
 /// Routes are then mounted (some conditionally).
+#[inline]
 pub fn server() -> Rocket {
     // Although we inline most variables at compile-time,
     // Rocket doesn't let us do this.

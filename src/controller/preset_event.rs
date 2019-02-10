@@ -21,7 +21,8 @@ lazy_static! {
     /// To read from the cache,
     /// you'll want to call `CACHE.lock()` before performing normal operations.
     /// ```
-    static ref CACHE: Mutex<LruCache<i32, PresetEvent>> = Mutex::new(LruCache::new(PRESET_EVENT_CACHE_SIZE));
+    static ref CACHE: Mutex<LruCache<i32, PresetEvent>> =
+        Mutex::new(LruCache::new(PRESET_EVENT_CACHE_SIZE));
 }
 
 generate_structs! {

@@ -143,7 +143,7 @@ impl ToMarkdown for Event {
             let terminal_count = &self.terminal_count;
             let message = self.message.replace('\n', " ").replace('|', "\\|");
 
-            write!(&mut md, "|{}|{}|{}|\n", utc, terminal_count, message)?;
+            writeln!(&mut md, "|{}|{}|{}|", utc, terminal_count, message)?;
         }
 
         Ok(md)

@@ -17,7 +17,7 @@ const ROCKET_SECRET_KEY: &[u8] = dotenv!("ROCKET_SECRET_KEY").as_bytes();
 #[derive(Serialize, Deserialize)]
 pub struct Claim {
     user_id: i32,
-    iat: i64,
+    iat:     i64,
 }
 
 impl Claim {

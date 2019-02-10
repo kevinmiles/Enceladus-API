@@ -4,7 +4,8 @@ use super::USER_CACHE_SIZE;
 use crate::{
     controller::{claim::Claim, thread::Thread},
     schema::user::{self, dsl::*},
-    DataDB, Database,
+    DataDB,
+    Database,
 };
 use enceladus_macros::generate_structs;
 use lazy_static::lazy_static;
@@ -183,8 +184,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
             ));
         }
 
-        let database = request
-            .guard::<DataDB>()
+        let database: DataDB = request
+            .guard()
             .succeeded()
             .expect("Unable to access database");
 

@@ -1,8 +1,7 @@
 use crate::tests::helpers::*;
 use request::Url;
 use reqwest as request;
-use std::collections::HashMap;
-use std::error::Error;
+use std::{collections::HashMap, error::Error};
 
 #[test]
 fn returns_auth_data() -> Result<(), Box<Error>> {

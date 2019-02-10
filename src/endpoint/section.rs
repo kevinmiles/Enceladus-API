@@ -71,10 +71,10 @@ fn set_lock(conn: DataDB, user: User, id: i32, data: LockSection) -> RocketResul
         return Err(Status::Unauthorized);
     }
 
-    // Let the user assign the (currently null) lock to themselves.
+    // (1) Let the user assign the (currently null) lock to themselves.
+    // (2) Let the user revoke their own lock.
     if (section.lock_held_by_user_id.is_none() && data.lock_held_by_user_id == Some(user.id))
-    // Let the user revoke their own lock.
-    || (section.lock_held_by_user_id == Some(user.id) && data.lock_held_by_user_id.is_none())
+        || (section.lock_held_by_user_id == Some(user.id) && data.lock_held_by_user_id.is_none())
     {
         return json_result!(Section::set_lock(&conn, id, &data));
     }

@@ -1,13 +1,12 @@
 use crate::server;
 use rocket::{
     http::{Header, Status},
-    local::Client as RocketClient,
-    local::LocalResponse as RocketResponse,
+    local::{Client as RocketClient, LocalResponse as RocketResponse},
 };
 use serde_json::Value;
 
 pub struct Client<'a> {
-    base: &'a str,
+    base:   &'a str,
     client: RocketClient,
 }
 
@@ -15,7 +14,7 @@ impl<'a> Client<'a> {
     #[inline]
     pub fn new() -> Self {
         Client {
-            base: "",
+            base:   "",
             client: RocketClient::new(server()).expect("invalid rocket instance"),
         }
     }
