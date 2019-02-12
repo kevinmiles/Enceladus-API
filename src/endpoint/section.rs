@@ -5,9 +5,14 @@ use crate::{
     },
     endpoint::helpers::RocketResult,
     DataDB,
+    TOKIO,
 };
 use rocket::{delete, http::Status, patch, post, response::status::Created};
 use rocket_contrib::json::Json;
+use std::time::{Duration, Instant};
+use tokio::{prelude::*, timer::Delay};
+
+const LOCK_DURATION: Duration = Duration::from_secs(10 * 60);
 
 generic_all!(Section);
 generic_get!(Section);
@@ -44,19 +49,29 @@ pub enum UpdateSectionDiscriminant {
 #[patch("/<id>", data = "<data>")]
 pub fn patch(
     conn: DataDB,
+    tokio_conn: DataDB,
     user: User,
     id: i32,
     data: Json<UpdateSectionDiscriminant>,
 ) -> RocketResult<Json<Section>> {
     use UpdateSectionDiscriminant::*;
     match data.into_inner() {
-        LockSection(data) => set_lock(conn, user, id, data),
+        LockSection(data) => set_lock(conn, tokio_conn, user, id, data),
         UpdateSection(data) => update_fields(conn, user, id, data),
     }
 }
 
 #[inline]
-fn set_lock(conn: DataDB, user: User, id: i32, data: LockSection) -> RocketResult<Json<Section>> {
+fn set_lock(
+    conn: DataDB,
+    tokio_conn: DataDB,
+    user: User,
+    id: i32,
+    data: LockSection,
+) -> RocketResult<Json<Section>> {
+    // We need to be able to send this to another thread if necessary.
+    let tokio_conn = Box::new(tokio_conn);
+
     let section = Section::find_id(&conn, id);
 
     // The section we're trying to find wasn't found.
@@ -76,6 +91,28 @@ fn set_lock(conn: DataDB, user: User, id: i32, data: LockSection) -> RocketResul
     if (section.lock_held_by_user_id.is_none() && data.lock_held_by_user_id == Some(user.id))
         || (section.lock_held_by_user_id == Some(user.id) && data.lock_held_by_user_id.is_none())
     {
+        // Automatically remove the lock after a prespecified duration.
+        // This is currently _not_ updated if a user renews their lock.
+        if data.lock_held_by_user_id.is_some() {
+            unsafe { TOKIO.clone().unwrap() }
+                .spawn(future::lazy(move || {
+                    Delay::new(Instant::now() + LOCK_DURATION)
+                        .inspect(move |_| {
+                            Section::set_lock(
+                                &tokio_conn,
+                                id,
+                                &LockSection {
+                                    lock_held_by_user_id: None,
+                                },
+                            )
+                            .unwrap();
+                        })
+                        .map(drop)
+                        .map_err(drop)
+                }))
+                .unwrap();
+        }
+
         return json_result!(Section::set_lock(&conn, id, &data));
     }
 

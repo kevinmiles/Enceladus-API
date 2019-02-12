@@ -16,7 +16,7 @@ fn event_posted() -> Result<(), Box<Error>> {
         posted: true,
         message: "foo".into(),
         terminal_count: "T+0:00".into(),
-        utc: 1549588286,
+        utc: 1_546_305_060,
         in_thread_id: 0, // irrelevant
     };
 
@@ -35,7 +35,7 @@ fn event_unposted() -> Result<(), Box<Error>> {
         posted: false,
         message: "foo".into(),
         terminal_count: "T+0:00".into(),
-        utc: 1549588286,
+        utc: 1_546_305_060,
         in_thread_id: 0, // irrelevant
     };
 
@@ -97,7 +97,7 @@ fn section_events() -> Result<(), Box<Error>> {
                     "posted": true,
                     "message": "foo",
                     "terminal_count": "T+0:00",
-                    "utc": 1546305060,
+                    "utc": 1_546_305_060,
                     "in_thread_id": thread_id,
                 }),
             )
@@ -116,7 +116,7 @@ fn section_events() -> Result<(), Box<Error>> {
                     "posted": false,
                     "message": "bar",
                     "terminal_count": "T+0:30",
-                    "utc": 1546305090,
+                    "utc": 1_546_305_090,
                     "in_thread_id": thread_id,
                 }),
             )
@@ -135,7 +135,7 @@ fn section_events() -> Result<(), Box<Error>> {
                     "posted": true,
                     "message": "baz",
                     "terminal_count": "T+1:00",
-                    "utc": 1546305120,
+                    "utc": 1_546_305_120,
                     "in_thread_id": thread_id,
                 }),
             )
@@ -251,7 +251,7 @@ fn thread() -> Result<(), Box<Error>> {
                     "posted": true,
                     "message": "foo",
                     "terminal_count": "T+0:00",
-                    "utc": 1546305060,
+                    "utc": 1_546_305_060,
                     "in_thread_id": thread_id,
                 }),
             )
@@ -270,7 +270,7 @@ fn thread() -> Result<(), Box<Error>> {
                     "posted": false,
                     "message": "bar",
                     "terminal_count": "T+0:30",
-                    "utc": 1546305090,
+                    "utc": 1_546_305_090,
                     "in_thread_id": thread_id,
                 }),
             )
@@ -289,7 +289,7 @@ fn thread() -> Result<(), Box<Error>> {
                     "posted": true,
                     "message": "baz",
                     "terminal_count": "T+1:00",
-                    "utc": 1546305120,
+                    "utc": 1_546_305_120,
                     "in_thread_id": thread_id,
                 }),
             )

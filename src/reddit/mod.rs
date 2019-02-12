@@ -55,7 +55,7 @@ fn endpoint(path: &str) -> String {
 
 pub struct RedditUser {
     pub refresh_token: String,
-    pub access_token:  String,
+    pub access_token:  Option<String>,
     pub expires_at:    Instant,
 }
 
@@ -86,7 +86,7 @@ impl RedditUser {
     pub fn obtain_refresh_token(code: &str) -> Result<RedditUser, request::Error> {
         #[derive(Deserialize)]
         struct APIReturnType {
-            access_token:  String,
+            access_token:  Option<String>,
             expires_in:    u64,
             refresh_token: Option<String>,
         }
@@ -94,7 +94,7 @@ impl RedditUser {
         if cfg!(test) {
             return Ok(RedditUser {
                 refresh_token: guid(),
-                access_token:  guid(),
+                access_token:  Some(guid()),
                 expires_at:    Instant::now() + Duration::from_secs(3600),
             });
         }
@@ -121,7 +121,7 @@ impl RedditUser {
     fn me(&self) -> ResponseResult {
         CLIENT
             .get(&endpoint("/api/v1/me"))
-            .bearer_auth(&self.access_token)
+            .bearer_auth(&self.access_token.clone().unwrap())
             .send()
     }
 
@@ -148,7 +148,7 @@ impl RedditUser {
     fn prefs(&self) -> ResponseResult {
         CLIENT
             .get(&endpoint("/api/v1/me/prefs"))
-            .bearer_auth(&self.access_token)
+            .bearer_auth(&self.access_token.clone().unwrap())
             .send()
     }
 
