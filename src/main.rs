@@ -26,9 +26,6 @@ use crate::endpoint::*;
 use dotenv::dotenv;
 use rocket::{routes, Rocket};
 use rocket_contrib::{database, helmet::SpaceHelmet};
-use tokio::{prelude::*, runtime::current_thread};
-
-pub static mut TOKIO: Option<current_thread::Handle> = None;
 
 /// Single point to change if we need to alter the DBMS.
 pub type Database = diesel::PgConnection;
@@ -92,32 +89,5 @@ pub fn server() -> Rocket {
 /// Uses the port number defined in the environment variable `ROCKET_PORT`.
 /// If not defined, defaults to `8000`.
 pub fn main() {
-    let (tokio_tx, tokio_rx) = tokio::sync::oneshot::channel();
-    let (handle_tx, handle_rx) = std::sync::mpsc::channel();
-
-    let tokio_thread = std::thread::spawn(move || {
-        let mut runtime = current_thread::Runtime::new().expect("Unable to create tokio runtime.");
-
-        // Send the runtime handle to the receiver below,
-        // where it is set to the global variable `TOKIO`.
-        handle_tx
-            .send(runtime.handle())
-            .expect("Unable to provide tokio's runtime handle to receiver.");
-
-        // Continue running until instructed to shut down.
-        runtime
-            .spawn({ tokio_rx.map_err(|err| panic!("Error on the shutdown channel: {:?}", err)) })
-            .run()
-            .expect("Tokio runtime execution failed.");
-    });
-
-    // Set the global `TOKIO`,
-    // which is used to add `Future`s to the event loop.
-    unsafe { TOKIO = Some(handle_rx.recv().unwrap()) };
-
     server().launch();
-
-    // End tokio's runtime.
-    tokio_tx.send(()).unwrap();
-    tokio_thread.join().unwrap();
 }
