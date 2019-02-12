@@ -55,6 +55,7 @@ fn section_not_events() -> Result<(), Box<Error>> {
         name: "Introduction".into(),
         content: "foo\n\nbar".into(),
         lock_held_by_user_id: None,
+        lock_assigned_at_utc: 0,
         in_thread_id: 0,
     };
 

@@ -26,6 +26,7 @@ table! {
         content -> Text,
         lock_held_by_user_id -> Nullable<Int4>,
         in_thread_id -> Int4,
+        lock_assigned_at_utc -> Int8,
     }
 }
 

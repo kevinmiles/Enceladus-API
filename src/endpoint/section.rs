@@ -1,6 +1,6 @@
 use crate::{
     controller::{
-        section::{InsertSection, LockSection, Section, UpdateSection},
+        section::{ExternalLockSection, InsertSection, LockSection, Section, UpdateSection},
         user::User,
     },
     endpoint::helpers::RocketResult,
@@ -8,6 +8,12 @@ use crate::{
 };
 use rocket::{delete, http::Status, patch, post, response::status::Created};
 use rocket_contrib::json::Json;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+/// How long are section locks able to be held for, guaranteed?
+/// Currently 10 minutes,
+/// although this is an implementation detail and should not be relied upon.
+const LOCK_DURATION_SECONDS: i64 = 10 * 60;
 
 generic_all!(Section);
 generic_get!(Section);
@@ -34,7 +40,7 @@ pub fn post(
 #[derive(serde::Deserialize)]
 #[serde(untagged)]
 pub enum UpdateSectionDiscriminant {
-    LockSection(LockSection),
+    LockSection(ExternalLockSection),
     UpdateSection(UpdateSection),
 }
 
@@ -56,7 +62,12 @@ pub fn patch(
 }
 
 #[inline]
-fn set_lock(conn: DataDB, user: User, id: i32, data: LockSection) -> RocketResult<Json<Section>> {
+fn set_lock(
+    conn: DataDB,
+    user: User,
+    id: i32,
+    data: ExternalLockSection,
+) -> RocketResult<Json<Section>> {
     let section = Section::find_id(&conn, id);
 
     // The section we're trying to find wasn't found.
@@ -71,12 +82,30 @@ fn set_lock(conn: DataDB, user: User, id: i32, data: LockSection) -> RocketResul
         return Err(Status::Unauthorized);
     }
 
+    let current_unix_timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+
     // (1) Let the user assign the (currently null) lock to themselves.
     // (2) Let the user revoke their own lock.
+    // (3) Let the user renew their own lock.
+    // (4) A user holds a lock, but it has been held beyond the specified minimum duration.
+    //     Allow the requesting user to possess the lock.
     if (section.lock_held_by_user_id.is_none() && data.lock_held_by_user_id == Some(user.id))
         || (section.lock_held_by_user_id == Some(user.id) && data.lock_held_by_user_id.is_none())
+        || (section.lock_held_by_user_id == Some(user.id)
+            && data.lock_held_by_user_id == Some(user.id))
+        || (section.lock_assigned_at_utc + LOCK_DURATION_SECONDS <= current_unix_timestamp)
     {
-        return json_result!(Section::set_lock(&conn, id, &data));
+        return json_result!(Section::set_lock(
+            &conn,
+            id,
+            &LockSection {
+                lock_held_by_user_id: data.lock_held_by_user_id,
+                lock_assigned_at_utc: current_unix_timestamp,
+            }
+        ));
     }
 
     // The user isn't setting the lock to themselves,

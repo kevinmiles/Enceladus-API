@@ -70,6 +70,7 @@ fn create() {
     // Remove this, as we don't know what value we should expect.
     // Afterwards, we can ensure that the value is null.
     body["id"].take();
+    body["lock_assigned_at_utc"].take();
     assert_eq!(
         body,
         json!({
@@ -78,6 +79,7 @@ fn create() {
             "name": section["name"],
             "content": section["content"],
             "lock_held_by_user_id": null,
+            "lock_assigned_at_utc": null,
             "in_thread_id": section["in_thread_id"],
         })
     );

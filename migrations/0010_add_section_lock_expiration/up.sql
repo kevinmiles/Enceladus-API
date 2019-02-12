@@ -1,0 +1,2 @@
+ALTER TABLE section
+ADD COLUMN lock_assigned_at_utc BIGINT NOT NULL DEFAULT 0;

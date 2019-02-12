@@ -29,23 +29,31 @@ lazy_static! {
     static ref CACHE: Mutex<LruCache<i32, Section>> = Mutex::new(LruCache::new(SECTION_CACHE_SIZE));
 }
 
+// Fields relating to the lock are not necessarily `auto`,
+// but are declared as such as they are handled by the `LockSection` struct.
 generate_structs! {
     Section("section") {
         auto id: i32,
         readonly is_events_section: bool = false,
         name: String = "",
         content: String = "",
-        // not actually auto, but updates are handled by a different struct
         auto lock_held_by_user_id: Option<i32>,
         readonly in_thread_id: i32,
+        auto lock_assigned_at_utc: i64,
     }
 }
 
-#[derive(AsChangeset, Deserialize)]
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct ExternalLockSection {
+    pub lock_held_by_user_id: Option<i32>,
+}
+
+#[derive(AsChangeset)]
 #[table_name = "section"]
 pub struct LockSection {
     pub lock_held_by_user_id: Option<i32>,
+    pub lock_assigned_at_utc: i64,
 }
 
 impl Section {
