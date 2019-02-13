@@ -49,9 +49,6 @@ fn get_one() {
             "reddit_username": created_value["reddit_username"],
             "lang": created_value["lang"],
             "is_global_admin": created_value["is_global_admin"],
-            "spacex__is_admin": created_value["spacex__is_admin"],
-            "spacex__is_mod": created_value["spacex__is_mod"],
-            "spacex__is_slack_member": created_value["spacex__is_slack_member"],
         })
     );
 
@@ -91,9 +88,6 @@ fn create() {
             "reddit_username": user["reddit_username"],
             "lang": "en",
             "is_global_admin": false,
-            "spacex__is_admin": false,
-            "spacex__is_mod": false,
-            "spacex__is_slack_member": false,
         })
     );
 
@@ -107,23 +101,17 @@ fn update() {
 
     // setup
     let created_value = create_user(&mut client);
-    assert_eq!(
-        created_value["spacex__is_slack_member"].as_bool(),
-        Some(false)
-    );
+    assert_eq!(created_value["is_global_admin"].as_bool(), Some(false));
 
     // test
-    let data = json!({ "spacex__is_slack_member": true });
+    let data = json!({ "is_global_admin": true });
     let body = client
         .with_base(BASE)
         .patch(None, &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
 
-    assert_eq!(
-        body["spacex__is_slack_member"],
-        data["spacex__is_slack_member"],
-    );
+    assert_eq!(body["is_global_admin"], data["is_global_admin"],);
 
     // teardown
     user::delete(&mut client, created_value["id"].as_i64().unwrap() as i32)

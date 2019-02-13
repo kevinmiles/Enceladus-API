@@ -16,13 +16,14 @@ extern crate dotenv_codegen;
 
 pub mod controller;
 pub mod endpoint;
+pub mod fairing;
 pub mod reddit;
 pub mod schema;
 
 #[cfg(test)]
 mod tests;
 
-use crate::endpoint::*;
+use crate::{endpoint::*, fairing::*};
 use dotenv::dotenv;
 use rocket::{routes, Rocket};
 use rocket_contrib::{database, helmet::SpaceHelmet};
@@ -60,6 +61,7 @@ pub fn server() -> Rocket {
     rocket::ignite()
         .attach(SpaceHelmet::default())
         .attach(DataDB::fairing())
+        .attach(FeatureFilter::fairing())
         .mount("/meta", routes![meta::meta])
         .mount("/oauth", routes![oauth::oauth, oauth::callback])
         .mount(

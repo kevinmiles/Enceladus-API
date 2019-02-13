@@ -60,7 +60,6 @@ fn create() {
         "subreddit": guid(),
         "t0": rand::random::<i64>(),
         "youtube_id": guid()[0..11],
-        "spacex__api_id": guid(),
     });
 
     let mut body = client
@@ -92,7 +91,6 @@ fn create() {
             "subreddit": thread["subreddit"],
             "t0": thread["t0"],
             "youtube_id": thread["youtube_id"],
-            "spacex__api_id": thread["spacex__api_id"],
         })
     );
 
@@ -120,16 +118,16 @@ fn update() {
     // setup
     let (user_id, user_token) = user::create(&mut client);
     let created_value = create_thread(&mut client, &user_token);
-    assert_eq!(created_value["spacex__api_id"].as_str(), None);
+    assert_eq!(created_value["youtube_id"].as_str(), None);
 
     // test
-    let data = json!({ "spacex__api_id": guid() });
+    let data = json!({ "youtube_id": guid()[0..11] });
     let body = client
         .with_base(BASE)
         .patch(Some(&user_token), &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
-    assert_eq!(body["spacex__api_id"], data["spacex__api_id"]);
+    assert_eq!(body["youtube_id"], data["youtube_id"]);
 
     // teardown
     client
