@@ -46,7 +46,10 @@ impl Fairing for FeatureFilter {
             .get_query_value("features")
             .unwrap_or_else(|| Ok("".into()))
             .unwrap();
-        let features: &HashSet<&str> = &features.split(',').collect();
+        let features: &HashSet<String> = &features
+            .split(',')
+            .map(|feature| feature.to_lowercase())
+            .collect();
 
         let mut body: Json = {
             let body_string = response.body_string();
@@ -76,7 +79,7 @@ impl Fairing for FeatureFilter {
 }
 
 #[inline]
-fn filter_object(object: &mut Map<String, Json>, features: &HashSet<&str>) {
+fn filter_object(object: &mut Map<String, Json>, features: &HashSet<String>) {
     for (key, _) in object.clone().iter() {
         let value = &mut object[key];
 
@@ -90,14 +93,16 @@ fn filter_object(object: &mut Map<String, Json>, features: &HashSet<&str>) {
         }
 
         // This field requires a feature that wasn't requested.
-        if key.contains("__") && !features.contains(key.splitn(2, "__").next().unwrap()) {
+        if key.contains("__")
+            && !features.contains(&*key.splitn(2, "__").next().unwrap().to_lowercase())
+        {
             object.remove(key);
         }
     }
 }
 
 #[inline]
-fn filter_array(array: &mut Vec<Json>, features: &HashSet<&str>) {
+fn filter_array(array: &mut Vec<Json>, features: &HashSet<String>) {
     for (i, _) in array.clone().iter().enumerate() {
         let val = &mut array[i];
 
