@@ -12,7 +12,7 @@ pub fn create(client: &mut Client, token: impl ToString) -> i32 {
             Some(&token.to_string()),
             json!({
                 "thread_name": guid(),
-                "launch_name": guid(),
+                "display_name": guid(),
                 "subreddit": guid(),
             }),
         )

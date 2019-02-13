@@ -10,7 +10,7 @@ fn create_thread(client: &mut Client, token: &str) -> Json {
             Some(token),
             json!({
                 "thread_name": guid(),
-                "launch_name": guid(),
+                "display_name": guid(),
             }),
         )
         .assert_created()
@@ -56,9 +56,9 @@ fn create() {
 
     let thread = json!({
         "thread_name": guid(),
-        "launch_name": guid(),
+        "display_name": guid(),
         "subreddit": guid(),
-        "t0": rand::random::<i64>(),
+        "space__t0": rand::random::<i64>(),
         "youtube_id": guid()[0..11],
     });
 
@@ -87,9 +87,8 @@ fn create() {
 
             // user-provided
             "thread_name": thread["thread_name"],
-            "launch_name": thread["launch_name"],
+            "display_name": thread["display_name"],
             "subreddit": thread["subreddit"],
-            "t0": thread["t0"],
             "youtube_id": thread["youtube_id"],
         })
     );
@@ -105,7 +104,7 @@ fn create_no_auth() {
     let mut client = Client::new();
     let thread = json!({
         "thread_name": guid(),
-        "launch_name": guid(),
+        "display_name": guid(),
     });
 
     client.with_base(BASE).post(None, &thread).assert_created();

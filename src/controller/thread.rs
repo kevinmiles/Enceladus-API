@@ -34,10 +34,10 @@ generate_structs! {
     Thread("thread") {
         auto id: i32,
         readonly thread_name: String,
-        launch_name: String,
+        display_name: String,
         readonly post_id: Option<String>,
         readonly subreddit: Option<String>,
-        t0: Option<i64>,
+        space__t0: Option<i64>,
         youtube_id: Option<String>,
         spacex__api_id: Option<String>,
         readonly created_by_user_id: i32,
@@ -51,11 +51,11 @@ generate_structs! {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalInsertThread {
-    pub thread_name: String,
-    pub launch_name: String,
-    pub subreddit: Option<String>,
-    pub t0: Option<i64>,
-    pub youtube_id: Option<String>,
+    pub thread_name:    String,
+    pub display_name:   String,
+    pub subreddit:      Option<String>,
+    pub space__t0:      Option<i64>,
+    pub youtube_id:     Option<String>,
     pub spacex__api_id: Option<String>,
 }
 
@@ -136,10 +136,10 @@ impl Thread {
     pub fn create(conn: &Database, data: &ExternalInsertThread, user_id: i32) -> QueryResult<Self> {
         let insertable_thread = InsertThread {
             thread_name: data.thread_name.clone(),
-            launch_name: data.launch_name.clone(),
+            display_name: data.display_name.clone(),
             post_id: None, // temporary
             subreddit: data.subreddit.clone(),
-            t0: data.t0,
+            space__t0: data.space__t0,
             youtube_id: data.youtube_id.clone(),
             spacex__api_id: data.spacex__api_id.clone(),
             created_by_user_id: user_id,

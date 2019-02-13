@@ -34,10 +34,10 @@ table! {
     thread (id) {
         id -> Int4,
         thread_name -> Varchar,
-        launch_name -> Varchar,
+        display_name -> Varchar,
         post_id -> Nullable<Varchar>,
         subreddit -> Nullable<Varchar>,
-        t0 -> Nullable<Int8>,
+        space__t0 -> Nullable<Int8>,
         youtube_id -> Nullable<Varchar>,
         spacex__api_id -> Nullable<Varchar>,
         created_by_user_id -> Int4,
