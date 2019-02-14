@@ -9,7 +9,7 @@ publish = false
 proc-macro = true
 
 [dependencies]
-quote = "0.6"
-syn = "0.15"
-proc-macro2 = "0.4"
-rand = "0.6"
+quote = "0.6.11"
+syn = "0.15.26"
+proc-macro2 = "0.4.27"
+rand = "0.6.5"

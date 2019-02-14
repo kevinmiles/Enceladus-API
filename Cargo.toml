@@ -1,43 +1,5 @@
-[package]
-name = "enceladus-api"
-version = "0.1.0"
-repository = "https://github.com/r-spacex/Enceladus-API-rs"
-license = "Apache-2.0"
-authors = ["Jacob Pratt <the.z.cuber@gmail.com>"]
-edition = "2018"
-build = "build.rs"
-publish = false
-
-[dependencies]
-chrono = "0.4.6"
-diesel = "1.4.1"
-dotenv = "0.13.0"
-dotenv_codegen = "0.11.0"
-enceladus_macros = { path = "./macros" }
-itertools = "0.8.0"
-jsonwebtoken = "5.0.1"
-lazy_static = "1.2.0"
-lru-cache = "0.1.1"
-parking_lot = { version = "0.7.1", features = ["nightly", "deadlock_detection"] }
-reqwest = "0.9.9"
-rocket = "0.4.0"
-serde = { version = "1.0.85", features = ["derive"] }
-serde_json = "1.0.37"
-uuid = { version = "0.7.1", features = ["v4"] }
-hashbrown = "0.1.8"
-
-[dependencies.rocket_contrib]
-default-features = false
-features = ["diesel_postgres_pool", "json", "helmet"]
-version = "0.4.0"
-
-[build-dependencies]
-diesel = "1.4.1"
-diesel_migrations = "1.4.0"
-dotenv = "0.13.0"
-
-[dev-dependencies]
-rand = "0.6.4"
+[workspace]
+members = ["api", "macros"]
 
 [profile.release]
 incremental = false

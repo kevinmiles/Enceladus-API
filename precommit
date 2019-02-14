@@ -1,8 +1,6 @@
 #!/bin/sh
 
 cargo fmt -- --check &&
-  cd macros && cargo fmt -- --check && cd .. &&
   cargo clippy &&
-  cd macros && cargo clippy && cd ..
   cargo check &&
   RUST_BACKTRACE=1 cargo test -v

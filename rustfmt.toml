@@ -1,4 +1,4 @@
-ignore = ["src/schema.rs"]
+ignore = ["api/src/schema.rs"]
 error_on_line_overflow = true
 error_on_unformatted = true
 imports_layout = "HorizontalVertical"
