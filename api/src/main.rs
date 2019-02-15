@@ -14,17 +14,18 @@ extern crate diesel;
 #[macro_use]
 extern crate dotenv_codegen;
 
-pub mod controller;
-pub mod endpoint;
-pub mod fairing;
-pub mod reddit;
-pub mod schema;
+mod controller;
+mod endpoint;
+mod fairing;
+mod reddit;
+mod schema;
 
 #[cfg(test)]
 mod tests;
 
-use crate::{endpoint::*, fairing::*};
 use dotenv::dotenv;
+use endpoint::*;
+use fairing::*;
 use rocket::{routes, Rocket};
 use rocket_contrib::{database, helmet::SpaceHelmet};
 
@@ -89,6 +90,6 @@ pub fn server() -> Rocket {
 /// Launch the server.
 /// Uses the port number defined in the environment variable `ROCKET_PORT`.
 /// If not defined, defaults to `8000`.
-pub fn main() {
+fn main() {
     server().launch();
 }

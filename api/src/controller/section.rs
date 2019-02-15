@@ -1,9 +1,5 @@
-use super::{ToMarkdown, SECTION_CACHE_SIZE};
+use super::{Event, Thread, ToMarkdown, UpdateThread, SECTION_CACHE_SIZE};
 use crate::{
-    controller::{
-        event::Event,
-        thread::{Thread, UpdateThread},
-    },
     schema::section::{self, dsl::*},
     Database,
 };

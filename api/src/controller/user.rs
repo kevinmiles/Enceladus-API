@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 
-use super::USER_CACHE_SIZE;
+use super::{Claim, Thread, USER_CACHE_SIZE};
 use crate::{
-    controller::{claim::Claim, thread::Thread},
     schema::user::{self, dsl::*},
     DataDB,
     Database,
@@ -136,6 +135,7 @@ impl User {
     ///
     /// The entry is updated in the database, added to cache, and returned.
     #[inline]
+    #[allow(dead_code)]
     pub fn update(conn: &Database, user_id: i32, data: &UpdateUser) -> QueryResult<Self> {
         let result: Self = diesel::update(user)
             .filter(id.eq(user_id))
@@ -149,6 +149,7 @@ impl User {
     ///
     /// Removes the entry from cache and returns the number of rows deleted (should be `1`).
     #[inline]
+    #[allow(dead_code)]
     pub fn delete(conn: &Database, user_id: i32) -> QueryResult<usize> {
         CACHE.lock().remove(&user_id);
         diesel::delete(user).filter(id.eq(user_id)).execute(conn)

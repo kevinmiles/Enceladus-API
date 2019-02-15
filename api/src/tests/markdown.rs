@@ -1,5 +1,5 @@
 use crate::{
-    controller::{event::Event, section::Section, thread::Thread, ToMarkdown},
+    controller::{Event, Section, Thread, ToMarkdown},
     server,
     tests::helpers::*,
     DataDB,

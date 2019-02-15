@@ -1,8 +1,5 @@
 use crate::{
-    controller::{
-        thread::{ExternalInsertThread, Thread, UpdateThread},
-        user::User,
-    },
+    controller::{ExternalInsertThread, Thread, UpdateThread, User},
     endpoint::helpers::RocketResult,
     DataDB,
 };

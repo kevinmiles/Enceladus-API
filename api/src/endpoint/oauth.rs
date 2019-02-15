@@ -1,8 +1,5 @@
 use crate::{
-    controller::{
-        claim::Claim,
-        user::{InsertUser, User},
-    },
+    controller::{Claim, InsertUser, User},
     guid,
     reddit::RedditUser,
     DataDB,

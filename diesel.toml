@@ -1,0 +1,2 @@
+[print_schema]
+file = "api/src/schema.rs"

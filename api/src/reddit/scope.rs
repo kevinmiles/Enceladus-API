@@ -1,5 +1,6 @@
 use std::fmt::{self, Display, Formatter};
 
+#[allow(dead_code)]
 pub enum Scope {
     /// Update preferences and related account information.
     /// Will not have access to your email or password.

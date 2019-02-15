@@ -1,8 +1,5 @@
 use crate::{
-    controller::{
-        event::{Event, InsertEvent, UpdateEvent},
-        user::User,
-    },
+    controller::{Event, InsertEvent, UpdateEvent, User},
     endpoint::helpers::RocketResult,
     DataDB,
 };

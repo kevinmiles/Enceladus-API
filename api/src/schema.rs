@@ -10,15 +10,6 @@ table! {
 }
 
 table! {
-    preset_event (id) {
-        id -> Int4,
-        holds_clock -> Bool,
-        message -> Text,
-        name -> Varchar,
-    }
-}
-
-table! {
     section (id) {
         id -> Int4,
         is_events_section -> Bool,
@@ -64,7 +55,6 @@ joinable!(thread -> user (created_by_user_id));
 
 allow_tables_to_appear_in_same_query!(
     event,
-    preset_event,
     section,
     thread,
     user,

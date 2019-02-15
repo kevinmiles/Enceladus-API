@@ -1,9 +1,5 @@
-use super::{ToMarkdown, EVENT_CACHE_SIZE};
-use crate::{
-    controller::thread::{Thread, UpdateThread},
-    schema::event,
-    Database,
-};
+use super::{Thread, ToMarkdown, UpdateThread, EVENT_CACHE_SIZE};
+use crate::{schema::event, Database};
 use chrono::NaiveDateTime;
 use enceladus_macros::generate_structs;
 use lazy_static::lazy_static;

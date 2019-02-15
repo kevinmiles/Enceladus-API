@@ -1,13 +1,10 @@
 #![allow(non_snake_case)]
 
-use crate::controller::user::User;
+use crate::controller::User;
 
 #[cfg(test)]
 use crate::{
-    controller::{
-        claim::Claim,
-        user::{InsertUser, UpdateUser},
-    },
+    controller::{Claim, InsertUser, UpdateUser},
     endpoint::helpers::RocketResult,
     DataDB,
 };

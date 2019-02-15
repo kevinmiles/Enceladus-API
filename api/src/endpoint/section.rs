@@ -1,8 +1,5 @@
 use crate::{
-    controller::{
-        section::{ExternalLockSection, InsertSection, LockSection, Section, UpdateSection},
-        user::User,
-    },
+    controller::{ExternalLockSection, InsertSection, LockSection, Section, UpdateSection, User},
     endpoint::helpers::RocketResult,
     DataDB,
 };

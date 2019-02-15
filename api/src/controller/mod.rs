@@ -10,8 +10,14 @@ pub trait ToMarkdown {
     fn to_markdown(&self, conn: &Database) -> Result<String, Box<dyn Error>>;
 }
 
-pub mod claim;
-pub mod event;
-pub mod section;
-pub mod thread;
-pub mod user;
+mod claim;
+mod event;
+mod section;
+mod thread;
+mod user;
+
+pub use claim::*;
+pub use event::*;
+pub use section::*;
+pub use thread::*;
+pub use user::*;
