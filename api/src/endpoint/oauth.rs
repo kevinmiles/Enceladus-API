@@ -23,7 +23,7 @@ use std::error::Error;
 /// in order to avoid any user input or external requests.
 #[inline]
 #[get("/?<callback>")]
-pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<Error>> {
+pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<dyn Error>> {
     let callback = callback.to_string();
 
     if cfg!(test) {
@@ -62,7 +62,7 @@ pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<Error>> {
 /// typically by contacting the database operator.
 #[inline]
 #[get("/callback?<code>&<state>")]
-pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, Box<Error>> {
+pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, Box<dyn Error>> {
     let reddit_user = RedditUser::obtain_refresh_token(&code)?;
     let username = reddit_user.username()?;
     let lang = reddit_user.lang()?;

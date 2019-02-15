@@ -132,7 +132,7 @@ impl Event {
 
 impl ToMarkdown for Event {
     #[inline]
-    fn to_markdown(&self, _conn: &Database) -> Result<String, Box<Error>> {
+    fn to_markdown(&self, _conn: &Database) -> Result<String, Box<dyn Error>> {
         let mut md = String::new();
 
         if self.posted {

@@ -8,7 +8,7 @@ use serde_json::json;
 use std::error::Error;
 
 #[test]
-fn event_posted() -> Result<(), Box<Error>> {
+fn event_posted() -> Result<(), Box<dyn Error>> {
     let database = DataDB::get_one(&server()).unwrap();
 
     let event = Event {
@@ -27,7 +27,7 @@ fn event_posted() -> Result<(), Box<Error>> {
 }
 
 #[test]
-fn event_unposted() -> Result<(), Box<Error>> {
+fn event_unposted() -> Result<(), Box<dyn Error>> {
     let database = DataDB::get_one(&server()).unwrap();
 
     let event = Event {
@@ -46,7 +46,7 @@ fn event_unposted() -> Result<(), Box<Error>> {
 }
 
 #[test]
-fn section_not_events() -> Result<(), Box<Error>> {
+fn section_not_events() -> Result<(), Box<dyn Error>> {
     let database = DataDB::get_one(&server()).unwrap();
 
     let section = Section {
@@ -66,7 +66,7 @@ fn section_not_events() -> Result<(), Box<Error>> {
 }
 
 #[test]
-fn section_events() -> Result<(), Box<Error>> {
+fn section_events() -> Result<(), Box<dyn Error>> {
     // setup
     let mut client = Client::new();
     let (user_id, user_token) = user::create(&mut client);
@@ -179,7 +179,7 @@ fn section_events() -> Result<(), Box<Error>> {
 }
 
 #[test]
-fn thread() -> Result<(), Box<Error>> {
+fn thread() -> Result<(), Box<dyn Error>> {
     // setup
     let mut client = Client::new();
     let (user_id, user_token) = user::create(&mut client);

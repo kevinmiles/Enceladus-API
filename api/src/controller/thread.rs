@@ -181,7 +181,7 @@ impl Thread {
 
 impl ToMarkdown for Thread {
     #[inline]
-    fn to_markdown(&self, conn: &Database) -> Result<String, Box<Error>> {
+    fn to_markdown(&self, conn: &Database) -> Result<String, Box<dyn Error>> {
         let mut md = String::new();
 
         for &section_id in self.sections_id.iter() {

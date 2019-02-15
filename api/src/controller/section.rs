@@ -156,7 +156,7 @@ impl Section {
 
 impl ToMarkdown for Section {
     #[inline]
-    fn to_markdown(&self, conn: &Database) -> Result<String, Box<Error>> {
+    fn to_markdown(&self, conn: &Database) -> Result<String, Box<dyn Error>> {
         let mut md = String::new();
 
         writeln!(&mut md, "# {}", self.name)?;

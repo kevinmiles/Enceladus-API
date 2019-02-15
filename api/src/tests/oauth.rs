@@ -4,7 +4,7 @@ use reqwest as request;
 use std::{collections::HashMap, error::Error};
 
 #[test]
-fn returns_auth_data() -> Result<(), Box<Error>> {
+fn returns_auth_data() -> Result<(), Box<dyn Error>> {
     let mut client = Client::new();
 
     // Simulate what the server performs.
