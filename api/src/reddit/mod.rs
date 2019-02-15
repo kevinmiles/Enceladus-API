@@ -61,7 +61,7 @@ pub struct RedditUser {
 
 impl RedditUser {
     #[inline]
-    pub fn get_auth_url(callback: &str) -> Result<String, Box<Error>> {
+    pub fn get_auth_url(callback: &str) -> Result<String, Box<dyn Error>> {
         Ok(Url::parse_with_params(
             "https://ssl.reddit.com/api/v1/authorize",
             &[

@@ -26,17 +26,6 @@ pub fn create(client: &mut Client) -> (i32, String) {
     )
 }
 
-pub fn create_admin(client: &mut Client) -> (i32, String) {
-    create_with_body(
-        client,
-        json!({
-            "reddit_username": guid(),
-            "refresh_token": guid(),
-            "is_global_admin": true,
-        }),
-    )
-}
-
 pub fn delete(client: &mut Client, id: i32) {
     client.with_base(BASE).delete(None, id);
 }

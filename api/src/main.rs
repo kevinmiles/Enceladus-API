@@ -71,7 +71,6 @@ pub fn server() -> Rocket {
             #[cfg(not(test))]
             routes![user::all, user::get],
         )
-        .mount("/v1/preset_event", all_routes!(preset_event))
         .mount(
             "/v1/thread",
             routes![
