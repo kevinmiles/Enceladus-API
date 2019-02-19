@@ -27,10 +27,8 @@ generate_structs! {
     Event("event") {
         auto id: i32,
         posted: bool = false,
-        message: String = "",
-        terminal_count: String = "",
-        utc: i64,
         readonly in_thread_id: i32,
+        cols: serde_json::Value,
     }
 }
 
@@ -128,19 +126,48 @@ impl Event {
 
 impl ToMarkdown for Event {
     #[inline]
-    fn to_markdown(&self, _conn: &Database) -> Result<String, Box<dyn Error>> {
+    fn to_markdown(&self, conn: &Database) -> Result<String, Box<dyn Error>> {
+        if !self.posted {
+            return Ok("".into());
+        }
+
         let mut md = String::new();
 
-        if self.posted {
-            let utc = NaiveDateTime::from_timestamp(self.utc, 0)
-                .time()
-                .format("%H:%M")
-                .to_string();
-            let terminal_count = &self.terminal_count;
-            let message = self.message.replace('\n', " ").replace('|', "\\|");
-
-            writeln!(&mut md, "|{}|{}|{}|", utc, terminal_count, message)?;
+        if !self.cols.is_array() {
+            panic!("Expected columns to be array");
         }
+
+        let utc_col_index = Thread::find_id(conn, self.in_thread_id)?.space__utc_col_index;
+
+        for (i, val) in (0..).zip(self.cols.as_array().unwrap().iter()) {
+            write!(
+                &mut md,
+                "|{}",
+                // If the column in question is the designated UTC timestamp,
+                // format it as such.
+                if Some(i) == utc_col_index {
+                    if !val.is_i64() {
+                        panic!("Expected i64 in UTC column");
+                    }
+
+                    NaiveDateTime::from_timestamp(val.as_i64().unwrap(), 0)
+                        .time()
+                        .format("%H:%M")
+                        .to_string()
+                } else {
+                    use serde_json::Value::*;
+                    match val {
+                        Number(ref n) => n.clone().as_i64().unwrap().to_string(),
+                        String(ref s) => s.clone().to_owned(),
+                        _ => panic!("Expected number or string"),
+                    }
+                }
+                .replace('\n', " ")
+                .replace('|', "\\|")
+            )?;
+        }
+
+        writeln!(&mut md, "|")?;
 
         Ok(md)
     }

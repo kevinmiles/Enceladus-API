@@ -11,6 +11,7 @@ fn create_thread(client: &mut Client, token: &str) -> Json {
             json!({
                 "thread_name": guid(),
                 "display_name": guid(),
+                "event_column_headers": [],
             }),
         )
         .assert_created()
@@ -60,6 +61,7 @@ fn create() {
         "subreddit": guid(),
         "space__t0": rand::random::<i64>(),
         "youtube_id": guid()[0..11],
+        "event_column_headers": [],
     });
 
     let mut body = client
@@ -90,6 +92,7 @@ fn create() {
             "display_name": thread["display_name"],
             "subreddit": thread["subreddit"],
             "youtube_id": thread["youtube_id"],
+            "event_column_headers": thread["event_column_headers"],
         })
     );
 
@@ -105,6 +108,7 @@ fn create_no_auth() {
     let thread = json!({
         "thread_name": guid(),
         "display_name": guid(),
+        "event_column_headers": [],
     });
 
     client.with_base(BASE).post(None, &thread).assert_created();

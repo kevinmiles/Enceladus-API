@@ -9,7 +9,7 @@ fn create_event(client: &mut Client, token: &str, thread_id: i32) -> Json {
         .post(
             Some(token),
             json!({
-                "utc": 1_500_000_000,
+                "cols": [1_500_000_000, guid(), guid()],
                 "in_thread_id": thread_id,
             }),
         )
@@ -58,9 +58,7 @@ fn create() {
     let thread_id = thread::create(&mut client, &user_token);
 
     let event = json!({
-        "message": guid(),
-        "terminal_count": guid(),
-        "utc": rand::random::<i64>(),
+        "cols": [rand::random::<i64>(), guid(), guid()],
         "in_thread_id": thread_id,
     });
 
@@ -82,9 +80,7 @@ fn create() {
         json!({
             "id": null,
             "posted": false,
-            "message": event["message"],
-            "terminal_count": event["terminal_count"],
-            "utc": event["utc"],
+            "cols": event["cols"],
             "in_thread_id": event["in_thread_id"],
         })
     );

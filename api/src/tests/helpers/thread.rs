@@ -14,6 +14,8 @@ pub fn create(client: &mut Client, token: impl ToString) -> i32 {
                 "thread_name": guid(),
                 "display_name": guid(),
                 "subreddit": guid(),
+                "event_column_headers": ["UTC", "Countdown", "Message"],
+                "space__utc_col_index": 0,
             }),
         )
         .assert_created()

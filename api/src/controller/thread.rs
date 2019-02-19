@@ -42,6 +42,8 @@ generate_structs! {
         readonly created_by_user_id: i32,
         sections_id: Vec<i32> = vec![],
         events_id: Vec<i32> = vec![],
+        event_column_headers: Vec<String>,
+        space__utc_col_index: Option<i16>,
     }
 }
 
@@ -50,12 +52,14 @@ generate_structs! {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalInsertThread {
-    pub thread_name:    String,
-    pub display_name:   String,
-    pub subreddit:      Option<String>,
-    pub space__t0:      Option<i64>,
-    pub youtube_id:     Option<String>,
+    pub thread_name: String,
+    pub display_name: String,
+    pub subreddit: Option<String>,
+    pub space__t0: Option<i64>,
+    pub youtube_id: Option<String>,
     pub spacex__api_id: Option<String>,
+    pub event_column_headers: Vec<String>,
+    pub space__utc_col_index: Option<i16>,
 }
 
 impl Thread {
@@ -144,6 +148,8 @@ impl Thread {
             created_by_user_id: user_id,
             events_id: vec![],
             sections_id: vec![],
+            event_column_headers: data.event_column_headers.clone(),
+            space__utc_col_index: data.space__utc_col_index,
         };
 
         let result: Self = diesel::insert_into(thread)

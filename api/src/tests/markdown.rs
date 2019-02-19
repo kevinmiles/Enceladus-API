@@ -9,20 +9,40 @@ use std::error::Error;
 
 #[test]
 fn event_posted() -> Result<(), Box<dyn Error>> {
-    let database = DataDB::get_one(&server()).unwrap();
+    // setup
+    let mut client = Client::new();
+    let (user_id, user_token) = user::create(&mut client);
+    let thread_id = thread::create(&mut client, &user_token);
+    let conn = DataDB::get_one(&server()).unwrap();
 
-    let event = Event {
-        id: 0, // irrelevant
-        posted: true,
-        message: "foo".into(),
-        terminal_count: "T+0:00".into(),
-        utc: 1_546_305_060,
-        in_thread_id: 0, // irrelevant
-    };
+    // test
+    let event_id = client
+        .with_base("/v1/event")
+        .post(
+            Some(&user_token),
+            json!({
+                "posted": true,
+                "cols": [1_546_305_060, "T+0:00", "foo"],
+                "in_thread_id": thread_id,
+            }),
+        )
+        .assert_created()
+        .get_body_object()["id"]
+        .as_i64()
+        .unwrap() as i32;
 
-    let md = event.to_markdown(&database)?;
+    let md = Event::find_id(&conn, event_id)?.to_markdown(&conn)?;
 
     assert_eq!("|01:11|T+0:00|foo|\n", md);
+
+    // teardown
+    client
+        .with_base("/v1/event")
+        .delete(Some(&user_token), event_id)
+        .assert_no_content();
+    thread::delete(&mut client, &user_token, thread_id);
+    user::delete(&mut client, user_id);
+
     Ok(())
 }
 
@@ -31,11 +51,9 @@ fn event_unposted() -> Result<(), Box<dyn Error>> {
     let database = DataDB::get_one(&server()).unwrap();
 
     let event = Event {
-        id: 0, // irrelevant
-        posted: false,
-        message: "foo".into(),
-        terminal_count: "T+0:00".into(),
-        utc: 1_546_305_060,
+        id:           0, // irrelevant
+        posted:       false,
+        cols:         json!([1_546_305_060, "T+0:00", "foo"]),
         in_thread_id: 0, // irrelevant
     };
 
@@ -96,9 +114,7 @@ fn section_events() -> Result<(), Box<dyn Error>> {
                 Some(&user_token),
                 json!({
                     "posted": true,
-                    "message": "foo",
-                    "terminal_count": "T+0:00",
-                    "utc": 1_546_305_060,
+                    "cols": [1_546_305_060, "T+0:00", "foo"],
                     "in_thread_id": thread_id,
                 }),
             )
@@ -115,9 +131,7 @@ fn section_events() -> Result<(), Box<dyn Error>> {
                 Some(&user_token),
                 json!({
                     "posted": false,
-                    "message": "bar",
-                    "terminal_count": "T+0:30",
-                    "utc": 1_546_305_090,
+                    "cols": [1_546_305_090, "T+0:30", "bar"],
                     "in_thread_id": thread_id,
                 }),
             )
@@ -134,9 +148,7 @@ fn section_events() -> Result<(), Box<dyn Error>> {
                 Some(&user_token),
                 json!({
                     "posted": true,
-                    "message": "baz",
-                    "terminal_count": "T+1:00",
-                    "utc": 1_546_305_120,
+                    "cols": [1_546_305_120, "T+1:00", "baz"],
                     "in_thread_id": thread_id,
                 }),
             )
@@ -250,9 +262,7 @@ fn thread() -> Result<(), Box<dyn Error>> {
                 Some(&user_token),
                 json!({
                     "posted": true,
-                    "message": "foo",
-                    "terminal_count": "T+0:00",
-                    "utc": 1_546_305_060,
+                    "cols": [1_546_305_060, "T+0:00", "foo"],
                     "in_thread_id": thread_id,
                 }),
             )
@@ -269,9 +279,7 @@ fn thread() -> Result<(), Box<dyn Error>> {
                 Some(&user_token),
                 json!({
                     "posted": false,
-                    "message": "bar",
-                    "terminal_count": "T+0:30",
-                    "utc": 1_546_305_090,
+                    "cols": [1_546_305_090, "T+0:30", "bar"],
                     "in_thread_id": thread_id,
                 }),
             )
@@ -288,9 +296,7 @@ fn thread() -> Result<(), Box<dyn Error>> {
                 Some(&user_token),
                 json!({
                     "posted": true,
-                    "message": "baz",
-                    "terminal_count": "T+1:00",
-                    "utc": 1_546_305_120,
+                    "cols": [1_546_305_120, "T+1:00", "baz"],
                     "in_thread_id": thread_id,
                 }),
             )

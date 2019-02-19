@@ -2,10 +2,8 @@ table! {
     event (id) {
         id -> Int4,
         posted -> Bool,
-        message -> Text,
-        terminal_count -> Varchar,
-        utc -> Int8,
         in_thread_id -> Int4,
+        cols -> Jsonb,
     }
 }
 
@@ -34,6 +32,8 @@ table! {
         created_by_user_id -> Int4,
         sections_id -> Array<Int4>,
         events_id -> Array<Int4>,
+        event_column_headers -> Array<Text>,
+        space__utc_col_index -> Nullable<Int2>,
     }
 }
 

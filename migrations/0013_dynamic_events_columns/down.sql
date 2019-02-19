@@ -1,0 +1,17 @@
+ALTER TABLE thread
+DROP COLUMN event_column_headers;
+
+ALTER TABLE event
+ADD COLUMN message TEXT NOT NULL DEFAULT '';
+
+ALTER TABLE event
+ADD COLUMN terminal_count VARCHAR(255) NOT NULL DEFAULT '';
+
+ALTER TABLE event
+ADD COLUMN utc BIGINT NOT NULL;
+
+ALTER TABLE event
+DROP COLUMN cols;
+
+ALTER TABLE thread
+DROP COLUMN space__utc_col_index;
