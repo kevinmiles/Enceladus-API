@@ -6,6 +6,7 @@
     const_str_as_bytes
 )]
 #![deny(clippy::all)]
+#![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.
 #![allow(intra_doc_link_resolution_failure, clippy::match_bool)]
 
 #[macro_use]

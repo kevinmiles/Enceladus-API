@@ -139,7 +139,7 @@ impl ToMarkdown for Event {
 
         let utc_col_index = Thread::find_id(conn, self.in_thread_id)?.space__utc_col_index;
 
-        for (i, val) in (0..).zip(self.cols.as_array().unwrap().iter()) {
+        for (val, i) in self.cols.as_array().unwrap().iter().zip(0..) {
             write!(
                 &mut md,
                 "|{}",

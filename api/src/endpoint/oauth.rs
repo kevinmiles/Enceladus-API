@@ -70,7 +70,7 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
         &InsertUser {
             reddit_username: username.to_owned(),
             lang: lang.to_owned(),
-            refresh_token: reddit_user.refresh_token.clone(),
+            refresh_token: reddit_user.refresh_token,
             is_global_admin: false,
             spacex__is_admin: false,
             spacex__is_mod: false,

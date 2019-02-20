@@ -43,7 +43,7 @@ generate_structs! {
         sections_id: Vec<i32> = vec![],
         events_id: Vec<i32> = vec![],
         event_column_headers: Vec<String>,
-        space__utc_col_index: Option<i16>,
+        readonly space__utc_col_index: Option<i16>,
     }
 }
 

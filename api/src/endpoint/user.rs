@@ -52,6 +52,8 @@ pub struct TokenUser {
     spacex__is_slack_member: bool,
 }
 
+// The encoding will never fail given an integer.
+#[allow(clippy::fallible_impl_from)]
 #[cfg(test)]
 impl From<User> for TokenUser {
     fn from(user: User) -> TokenUser {

@@ -1,5 +1,5 @@
 use crate::{
-    controller::{Event, InsertEvent, UpdateEvent, User},
+    controller::{Event, InsertEvent, Thread, UpdateEvent, User},
     endpoint::helpers::RocketResult,
     DataDB,
 };
@@ -17,6 +17,26 @@ pub fn post(
     data: Json<InsertEvent>,
 ) -> RocketResult<Created<Json<Event>>> {
     if user.can_modify_thread(&conn, data.in_thread_id) {
+        let thread = Thread::find_id(&conn, data.in_thread_id).unwrap();
+
+        // Ensure the provided columns are of the expected types and length.
+        if !data.cols.is_array()
+            || thread.event_column_headers.len() != data.cols.clone().as_array().unwrap().len()
+            || !data
+                .cols
+                .clone()
+                .as_array()
+                .unwrap()
+                .iter()
+                .zip(0..)
+                .all(|(val, i)| match thread.space__utc_col_index {
+                    Some(n) if i == n => val.is_number(),
+                    _ => val.is_string(),
+                })
+        {
+            return Err(Status::UnprocessableEntity);
+        }
+
         return created!(Event::create(&conn, &data));
     }
 

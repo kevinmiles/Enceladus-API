@@ -22,7 +22,7 @@ lazy_static! {
                 let mut headers = header::HeaderMap::default();
                 headers.insert(
                     header::USER_AGENT,
-                    header::HeaderValue::from_static(&USER_AGENT),
+                    header::HeaderValue::from_static(USER_AGENT),
                 );
                 headers
             })
