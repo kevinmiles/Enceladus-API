@@ -30,39 +30,3 @@ macro_rules! generic_get {
         }
     };
 }
-
-/// Generate an endpoint for updating an instance of the provided type.
-///
-/// This macro should suffice whenever the type does not require
-/// any additional checking of parameters or other consideration.
-#[macro_export]
-macro_rules! generic_patch {
-    ($x:ident) => {
-        #[inline]
-        #[rocket::patch("/<id>", data = "<data>")]
-        pub fn patch(
-            conn: crate::DataDB,
-            id: i32,
-            data: rocket_contrib::json::Json<concat_idents!(Update, $x)>,
-        ) -> crate::endpoint::helpers::RocketResult<rocket_contrib::json::Json<$x>> {
-            json_result!($x::update(&conn, id, &data))
-        }
-    };
-}
-
-/// Generate an endpoint for updating an instance of the provided type.
-///
-/// This macro should suffice for most, if not all, types.
-#[macro_export]
-macro_rules! generic_delete {
-    ($x:ident) => {
-        #[inline]
-        #[rocket::delete("/<id>")]
-        pub fn delete(
-            conn: crate::DataDB,
-            id: i32,
-        ) -> crate::endpoint::helpers::RocketResult<rocket::http::Status> {
-            no_content!($x::delete(&conn, id))
-        }
-    };
-}

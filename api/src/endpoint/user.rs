@@ -3,38 +3,40 @@
 use crate::controller::User;
 
 #[cfg(test)]
-use crate::{
-    controller::{Claim, InsertUser, UpdateUser},
-    endpoint::helpers::RocketResult,
-    DataDB,
+use {
+    crate::{
+        controller::{Claim, InsertUser, UpdateUser},
+        endpoint::helpers::RocketResult,
+        DataDB,
+    },
+    rocket::{delete, http::Status, patch, post, response::status::Created},
+    rocket_contrib::json::Json,
+    serde::Serialize,
+    std::convert::From,
 };
-
-#[cfg(test)]
-use rocket::{post, response::status::Created};
-
-#[cfg(test)]
-use rocket_contrib::json::Json;
-
-#[cfg(test)]
-use serde::Serialize;
-
-#[cfg(test)]
-use std::convert::From;
 
 generic_all!(User);
 generic_get!(User);
-
-#[cfg(test)]
-generic_patch!(User);
-
-#[cfg(test)]
-generic_delete!(User);
 
 #[cfg(test)]
 #[inline]
 #[post("/", data = "<data>")]
 pub fn post(conn: DataDB, data: Json<InsertUser>) -> RocketResult<Created<Json<TokenUser>>> {
     created!(User::create(&conn, &data).map(TokenUser::from))
+}
+
+#[cfg(test)]
+#[inline]
+#[patch("/<id>", data = "<data>")]
+pub fn patch(conn: DataDB, id: i32, data: Json<UpdateUser>) -> RocketResult<Json<User>> {
+    json_result!(User::update(&conn, id, &data))
+}
+
+#[cfg(test)]
+#[inline]
+#[delete("/<id>")]
+pub fn delete(conn: DataDB, id: i32) -> RocketResult<Status> {
+    no_content!(User::delete(&conn, id))
 }
 
 // There's no need to use this elsewhere,
