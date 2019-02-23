@@ -1,13 +1,37 @@
 use crate::{
     controller::{Claim, InsertUser, User},
     guid,
-    reddit::RedditUser,
     DataDB,
 };
+use lazy_static::lazy_static;
+use reddit::Reddit;
 use request::Url;
 use reqwest as request;
 use rocket::{get, http::RawStr, response::Redirect, uri};
 use std::error::Error;
+
+lazy_static! {
+    // FIXME make this a regular `const` or `static` once `Option::unwrap` becomes a `const fn`.
+    static ref REDDIT: Reddit<'static> = Reddit::builder()
+        .with_redirect_uri(dotenv!("REDDIT_REDIRECT_URI"))
+        .with_user_agent(dotenv!("REDDIT_USER_AGENT"))
+        .with_client_id(dotenv!("REDDIT_CLIENT_ID"))
+        .with_secret(dotenv!("REDDIT_SECRET"))
+        .with_permanent(true)
+        .with_scopes({
+            use reddit::Scope::*;
+            &[
+                Account,  // Find language
+                Identity, // Find username
+                Submit,   // Submit threads
+                Edit,     // Update threads
+                ModPosts, // (Moderators) Approve a post so it's visible
+                ModFlair, // (Moderators) Add/remove/edit a flair on the submission
+            ]
+        })
+        .build()
+        .unwrap();
+}
 
 // TODO store this data in cookies,
 // such that we can avoid going to reddit
@@ -33,7 +57,7 @@ pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<dyn Error>> {
         )))
     } else {
         // Send the user off to Reddit for authentication
-        Ok(Redirect::to(RedditUser::get_auth_url(&callback)?))
+        Ok(Redirect::to(REDDIT.get_auth_url(&callback)?))
     }
 }
 
@@ -60,9 +84,9 @@ pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<dyn Error>> {
 #[inline]
 #[get("/callback?<code>&<state>")]
 pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, Box<dyn Error>> {
-    let reddit_user = RedditUser::obtain_refresh_token(&code)?;
-    let username = reddit_user.username()?;
-    let lang = reddit_user.lang()?;
+    let reddit_user = REDDIT.obtain_refresh_token(&code, cfg!(test))?;
+    let username = reddit_user.username(cfg!(test))?;
+    let lang = reddit_user.lang(cfg!(test))?;
 
     // Insert the user into our database.
     let user = User::create(
@@ -70,7 +94,7 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
         &InsertUser {
             reddit_username: username.to_owned(),
             lang: lang.to_owned(),
-            refresh_token: reddit_user.refresh_token,
+            refresh_token: reddit_user.refresh_token().clone(),
             is_global_admin: false,
             spacex__is_admin: false,
             spacex__is_mod: false,

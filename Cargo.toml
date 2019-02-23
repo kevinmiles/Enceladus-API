@@ -1,5 +1,5 @@
 [workspace]
-members = ["api", "macros"]
+members = ["api", "macros", "reddit"]
 
 [profile.release]
 incremental = false

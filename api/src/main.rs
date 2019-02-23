@@ -12,7 +12,6 @@ extern crate dotenv_codegen;
 mod controller;
 mod endpoint;
 mod fairing;
-mod reddit;
 mod schema;
 
 #[cfg(test)]

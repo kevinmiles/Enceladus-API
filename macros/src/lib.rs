@@ -1,5 +1,11 @@
-#![feature(proc_macro_hygiene)]
-#![allow(clippy::eval_order_dependence)]
+#![feature(proc_macro_hygiene, decl_macro, custom_attribute, const_str_as_bytes)]
+#![deny(clippy::all)]
+#![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.
+#![allow(
+    intra_doc_link_resolution_failure,
+    clippy::match_bool,
+    clippy::eval_order_dependence
+)]
 
 extern crate proc_macro;
 
