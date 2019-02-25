@@ -8,7 +8,10 @@ use reddit::Reddit;
 use request::Url;
 use reqwest as request;
 use rocket::{get, http::RawStr, response::Redirect, uri};
-use std::error::Error;
+use std::{
+    error::Error,
+    time::{Duration, Instant},
+};
 
 lazy_static! {
     // FIXME make this a regular `const` or `static` once `Option::unwrap` becomes a `const fn`.
@@ -84,9 +87,25 @@ pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<dyn Error>> {
 #[inline]
 #[get("/callback?<code>&<state>")]
 pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, Box<dyn Error>> {
-    let reddit_user = REDDIT.obtain_refresh_token(&code, cfg!(test))?;
-    let username = reddit_user.username(cfg!(test))?;
-    let lang = reddit_user.lang(cfg!(test))?;
+    let reddit_user;
+    let lang;
+    let username;
+
+    if cfg!(test) {
+        reddit_user = reddit::User::builder()
+            .with_reddit_instance(&REDDIT)
+            .with_refresh_token(guid())
+            .with_access_token(Some(guid()))
+            .with_expires_at(Instant::now() + Duration::from_secs(3600))
+            .build()
+            .unwrap();
+        lang = guid()[0..2].to_owned();
+        username = guid();
+    } else {
+        reddit_user = REDDIT.obtain_refresh_token(&code)?;
+        username = reddit_user.username()?;
+        lang = reddit_user.lang()?;
+    }
 
     // Insert the user into our database.
     let user = User::create(

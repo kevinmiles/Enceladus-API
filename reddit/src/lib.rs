@@ -2,16 +2,18 @@
 #![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.
 #![allow(intra_doc_link_resolution_failure, clippy::match_bool)]
 
-mod builder;
+mod reddit_builder;
 mod scope;
+mod user_builder;
 
-use builder::RedditBuilder;
 use itertools::Itertools;
 use lazy_static::lazy_static;
+use reddit_builder::RedditBuilder;
 use reqwest::{header::USER_AGENT, Client, Url, UrlError};
 pub use scope::Scope;
 use serde::Deserialize;
 use std::time::{Duration, Instant};
+use user_builder::UserBuilder;
 
 lazy_static! {
     static ref CLIENT: Client = Client::builder().gzip(true).build().unwrap();
@@ -81,6 +83,11 @@ impl Reddit<'_> {
 // Getters
 impl User<'_> {
     #[inline(always)]
+    pub const fn builder() -> UserBuilder<'static> {
+        UserBuilder::default()
+    }
+
+    #[inline(always)]
     pub const fn refresh_token(&self) -> &String {
         &self.refresh_token
     }
@@ -120,23 +127,12 @@ impl<'a> Reddit<'a> {
     }
 
     #[inline]
-    pub fn obtain_refresh_token(&self, code: &str, testing: bool) -> Result<User, reqwest::Error> {
+    pub fn obtain_refresh_token(&self, code: &str) -> Result<User, reqwest::Error> {
         #[derive(Deserialize)]
         struct APIReturnType {
             access_token:  Option<String>,
             expires_in:    u64,
             refresh_token: Option<String>,
-        }
-
-        // We're unable to share `cfg!(test)` between modules,
-        // so this is the simplest option.
-        if testing {
-            return Ok(User {
-                reddit_instance: self,
-                refresh_token:   guid(),
-                access_token:    Some(guid()),
-                expires_at:      Instant::now() + Duration::from_secs(3600),
-            });
         }
 
         let data: APIReturnType = CLIENT
@@ -188,13 +184,7 @@ impl User<'_> {
 /// Methods that use endpoints
 impl User<'_> {
     #[inline]
-    pub fn username(&self, testing: bool) -> Result<String, reqwest::Error> {
-        // We're unable to share `cfg!(test)` between modules,
-        // so this is the simplest option.
-        if testing {
-            return Ok(guid());
-        }
-
+    pub fn username(&self) -> Result<String, reqwest::Error> {
         // We may use the `is_mod` field in the future
         // to automatically determine if the user is a moderator
         // of a specific subreddit
@@ -209,13 +199,7 @@ impl User<'_> {
     }
 
     #[inline]
-    pub fn lang(&self, testing: bool) -> Result<String, reqwest::Error> {
-        // We're unable to share `cfg!(test)` between modules,
-        // so this is the simplest option.
-        if testing {
-            return Ok(guid()[0..2].to_owned());
-        }
-
+    pub fn lang(&self) -> Result<String, reqwest::Error> {
         #[derive(Deserialize)]
         struct APIReturnType {
             lang: String,

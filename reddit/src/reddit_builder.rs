@@ -30,12 +30,12 @@ impl<'a> RedditBuilder<'a> {
     #[inline]
     pub fn build(self) -> Option<Reddit<'a>> {
         Some(Reddit {
-            redirect_uri: self.redirect_uri.unwrap(),
-            user_agent:   self.user_agent.unwrap(),
-            client_id:    self.client_id.unwrap(),
-            secret:       self.secret.unwrap(),
-            permanent:    self.permanent.unwrap(),
-            scopes:       self.scopes.unwrap(),
+            redirect_uri: self.redirect_uri?,
+            user_agent:   self.user_agent?,
+            client_id:    self.client_id?,
+            secret:       self.secret?,
+            permanent:    self.permanent?,
+            scopes:       self.scopes?,
         })
     }
 
