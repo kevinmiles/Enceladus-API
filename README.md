@@ -3,6 +3,8 @@
 ![](https://img.shields.io/travis/com/r-spacex/Enceladus-API-rs/master.svg?style=flat-square)
 ![](https://img.shields.io/github/license/r-spacex/Enceladus-API-rs.svg?style=flat-square)
 
+[Documentation](https://r-spacex.github.io/Enceladus-API-rs)
+
 ## Build process
 
 In order to build the API,
@@ -34,12 +36,12 @@ The only thing of note is that, for this project,
 it is preferred to use sequential IDs rather than the datetime.
 
 After creating a migration, be sure to run `diesel migrate run`!
-Without that, `src/schema.rs` will not be updated,
+Without that, `api/src/schema.rs` will not be updated,
 and you won't be able to compile any changes relying on it.
 
 ## Testing
 
-Tests on each endpoint are located in the `src/tests` directory.
+Tests on each endpoint are located in the `api/src/tests` directory.
 As of present, unit tests have not been created,
 and may not in the future.
 
