@@ -3,3 +3,7 @@ authors = ["Jacob Pratt"]
 multilingual = false
 src = "src"
 title = "Enceladus API Documentation"
+
+[output.html]
+
+[output.linkcheck]
