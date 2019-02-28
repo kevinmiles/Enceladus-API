@@ -10,12 +10,12 @@ use reqwest as request;
 use rocket::{get, http::RawStr, response::Redirect, uri};
 use std::{
     error::Error,
-    time::{Duration, Instant},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 lazy_static! {
     // FIXME make this a regular `const` or `static` once `Option::unwrap` becomes a `const fn`.
-    static ref REDDIT: Reddit<'static> = Reddit::builder()
+    pub static ref REDDIT: Reddit<'static> = Reddit::builder()
         .with_redirect_uri(dotenv!("REDDIT_REDIRECT_URI"))
         .with_user_agent(dotenv!("REDDIT_USER_AGENT"))
         .with_client_id(dotenv!("REDDIT_CLIENT_ID"))
@@ -87,7 +87,7 @@ pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<dyn Error>> {
 #[inline]
 #[get("/callback?<code>&<state>")]
 pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, Box<dyn Error>> {
-    let reddit_user;
+    let mut reddit_user;
     let lang;
     let username;
 
@@ -95,8 +95,8 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
         reddit_user = reddit::User::builder()
             .with_reddit_instance(&REDDIT)
             .with_refresh_token(guid())
-            .with_access_token(Some(guid()))
-            .with_expires_at(Instant::now() + Duration::from_secs(3600))
+            .with_access_token(guid())
+            .with_expires_at(SystemTime::now() + Duration::from_secs(3600))
             .build()
             .unwrap();
         lang = guid()[0..2].to_owned();
@@ -118,6 +118,12 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
             spacex__is_admin: false,
             spacex__is_mod: false,
             spacex__is_slack_member: false,
+            access_token: reddit_user.access_token().clone(),
+            access_token_expires_at_utc: reddit_user
+                .expires_at()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64,
         },
     )?;
 

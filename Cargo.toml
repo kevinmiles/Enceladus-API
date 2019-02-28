@@ -1,6 +1,2 @@
 [workspace]
 members = ["api", "macros", "reddit"]
-
-[profile.release]
-incremental = false
-lto = true

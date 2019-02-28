@@ -22,6 +22,8 @@ pub fn create(client: &mut Client) -> (i32, String) {
         json!({
             "reddit_username": guid(),
             "refresh_token": guid(),
+            "access_token": guid(),
+            "access_token_expires_at_utc": 0,
         }),
     )
 }

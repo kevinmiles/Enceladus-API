@@ -136,11 +136,16 @@ impl Thread {
     ///
     /// The inserted row is added to the global cache and returned.
     #[inline]
-    pub fn create(conn: &Database, data: &ExternalInsertThread, user_id: i32) -> QueryResult<Self> {
+    pub fn create(
+        conn: &Database,
+        data: &ExternalInsertThread,
+        user_id: i32,
+        reddit_post_id: Option<String>,
+    ) -> QueryResult<Self> {
         let insertable_thread = InsertThread {
             thread_name: data.thread_name.clone(),
             display_name: data.display_name.clone(),
-            post_id: None, // temporary
+            post_id: reddit_post_id,
             subreddit: data.subreddit.clone(),
             space__t0: data.space__t0,
             youtube_id: data.youtube_id.clone(),

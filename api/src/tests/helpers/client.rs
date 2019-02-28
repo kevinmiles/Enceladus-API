@@ -47,7 +47,7 @@ impl<'a> Client<'a> {
                 .client
                 .post(self.base)
                 .body(body.to_string())
-                .header(Header::new("Authentication", format!("Bearer {}", token)))
+                .header(Header::new("Authorization", format!("Bearer {}", token)))
                 .dispatch(),
             None => self
                 .client
@@ -64,7 +64,7 @@ impl<'a> Client<'a> {
                 .client
                 .patch(self.url_for(id))
                 .body(body.to_string())
-                .header(Header::new("Authentication", format!("Bearer {}", token)))
+                .header(Header::new("Authorization", format!("Bearer {}", token)))
                 .dispatch(),
             None => self
                 .client
@@ -80,7 +80,7 @@ impl<'a> Client<'a> {
             Some(token) => self
                 .client
                 .delete(self.url_for(id))
-                .header(Header::new("Authentication", format!("Bearer {}", token)))
+                .header(Header::new("Authorization", format!("Bearer {}", token)))
                 .dispatch(),
             None => self.client.delete(self.url_for(id)).dispatch(),
         })

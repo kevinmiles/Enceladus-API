@@ -11,6 +11,8 @@ fn create_user(client: &mut Client) -> Json {
             json!({
                 "reddit_username": guid(),
                 "refresh_token": guid(),
+                "access_token": guid(),
+                "access_token_expires_at_utc": 0,
             }),
         )
         .assert_created()
@@ -63,6 +65,8 @@ fn create() {
     let user = json!({
         "reddit_username": guid(),
         "refresh_token": guid(),
+        "access_token": guid(),
+        "access_token_expires_at_utc": 0,
     });
 
     let mut body = client

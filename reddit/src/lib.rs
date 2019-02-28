@@ -12,7 +12,7 @@ use reddit_builder::RedditBuilder;
 use reqwest::{header::USER_AGENT, Client, Url, UrlError};
 pub use scope::Scope;
 use serde::Deserialize;
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 use user_builder::UserBuilder;
 
 lazy_static! {
@@ -38,8 +38,8 @@ pub struct Reddit<'a> {
 pub struct User<'a> {
     reddit_instance: &'a Reddit<'a>,
     refresh_token:   String,
-    access_token:    Option<String>,
-    expires_at:      Instant,
+    access_token:    String,
+    expires_at:      SystemTime,
 }
 
 /// Builder and getters
@@ -92,13 +92,42 @@ impl User<'_> {
         &self.refresh_token
     }
 
-    #[inline(always)]
-    pub const fn access_token(&self) -> &Option<String> {
+    /// Get the access token of the user,
+    /// fetching a new one from Reddit if necessary.
+    #[inline]
+    pub fn access_token(&mut self) -> &String {
+        // Refresh the access token if it's expired.
+        if self.expires_at < SystemTime::now() {
+            #[derive(Deserialize)]
+            struct APIReturnType {
+                access_token: String,
+                expires_in:   u64,
+            }
+
+            let response: APIReturnType = CLIENT
+                .post("https://ssl.reddit.com/api/v1/access_token")
+                .basic_auth(
+                    self.reddit_instance.client_id,
+                    Some(self.reddit_instance.secret),
+                )
+                .form(&[
+                    ("grant_type", "refresh_token"),
+                    ("refresh_token", &self.refresh_token),
+                ])
+                .send()
+                .unwrap()
+                .json()
+                .unwrap();
+
+            self.access_token = response.access_token;
+            self.expires_at = SystemTime::now() + Duration::from_secs(response.expires_in);
+        }
+
         &self.access_token
     }
 
     #[inline(always)]
-    pub const fn expires_at(&self) -> &Instant {
+    pub const fn expires_at(&self) -> &SystemTime {
         &self.expires_at
     }
 }
@@ -130,7 +159,7 @@ impl<'a> Reddit<'a> {
     pub fn obtain_refresh_token(&self, code: &str) -> Result<User, reqwest::Error> {
         #[derive(Deserialize)]
         struct APIReturnType {
-            access_token:  Option<String>,
+            access_token:  String,
             expires_in:    u64,
             refresh_token: Option<String>,
         }
@@ -150,7 +179,7 @@ impl<'a> Reddit<'a> {
             reddit_instance: self,
             refresh_token:   data.refresh_token.unwrap(),
             access_token:    data.access_token,
-            expires_at:      Instant::now() + Duration::from_secs(data.expires_in),
+            expires_at:      SystemTime::now() + Duration::from_secs(data.expires_in),
         })
     }
 }
@@ -163,20 +192,20 @@ fn endpoint(path: &str) -> String {
 /// Endpoints
 impl User<'_> {
     #[inline]
-    pub fn me(&self) -> Result<reqwest::Response, reqwest::Error> {
+    pub fn me(&mut self) -> Result<reqwest::Response, reqwest::Error> {
         CLIENT
             .get(&endpoint("/api/v1/me"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
-            .bearer_auth(&self.access_token.clone().unwrap())
+            .bearer_auth(self.access_token())
             .send()
     }
 
     #[inline]
-    pub fn prefs(&self) -> Result<reqwest::Response, reqwest::Error> {
+    pub fn prefs(&mut self) -> Result<reqwest::Response, reqwest::Error> {
         CLIENT
             .get(&endpoint("/api/v1/me/prefs"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
-            .bearer_auth(&self.access_token.clone().unwrap())
+            .bearer_auth(self.access_token())
             .send()
     }
 }
@@ -184,7 +213,7 @@ impl User<'_> {
 /// Methods that use endpoints
 impl User<'_> {
     #[inline]
-    pub fn username(&self) -> Result<String, reqwest::Error> {
+    pub fn username(&mut self) -> Result<String, reqwest::Error> {
         // We may use the `is_mod` field in the future
         // to automatically determine if the user is a moderator
         // of a specific subreddit
@@ -199,7 +228,7 @@ impl User<'_> {
     }
 
     #[inline]
-    pub fn lang(&self) -> Result<String, reqwest::Error> {
+    pub fn lang(&mut self) -> Result<String, reqwest::Error> {
         #[derive(Deserialize)]
         struct APIReturnType {
             lang: String,
@@ -208,9 +237,31 @@ impl User<'_> {
         Ok(self.prefs()?.json::<APIReturnType>()?.lang)
     }
 
+    #[inline]
+    pub fn submit_self_post(
+        &mut self,
+        subreddit: &str,
+        title: &str,
+        text: Option<&str>,
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        CLIENT
+            .post(&endpoint("/api/submit"))
+            .header(USER_AGENT, self.reddit_instance.user_agent)
+            .bearer_auth(self.access_token())
+            .form(&[
+                ("kind", "self"),
+                ("api_type", "json"),
+                ("extensions", "json"),
+                ("sendreplies", "false"),
+                ("sr", subreddit),
+                ("title", title),
+                ("text", text.unwrap_or_default()),
+            ])
+            .send()
+    }
+
     // TODO
-    // submit self post
-    // edit comment or self post
-    // approve a submission or comment
-    // set/unset sticky
+    // edit self post
+    // approve submission
+    // set sticky
 }

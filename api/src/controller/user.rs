@@ -2,6 +2,7 @@
 
 use super::{Claim, Thread, USER_CACHE_SIZE};
 use crate::{
+    endpoint::oauth::REDDIT,
     schema::user::{self, dsl::*},
     DataDB,
     Database,
@@ -16,6 +17,7 @@ use rocket::{
     Outcome,
 };
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+use std::time::{Duration, UNIX_EPOCH};
 
 lazy_static! {
     /// A global cache, containing a mapping of IDs to their respective `Event`.
@@ -42,6 +44,8 @@ generate_structs! {
         spacex__is_admin: bool = false,
         spacex__is_mod: bool = false,
         spacex__is_slack_member: bool = false,
+        private access_token: String,
+        private access_token_expires_at_utc: i64,
     }
 }
 
@@ -95,6 +99,35 @@ impl User {
 
         // The user is the thread creator.
         thread.created_by_user_id == self.id
+    }
+
+    #[inline]
+    pub fn update_access_token_if_necessary(
+        conn: &Database,
+        user_id: i32,
+        reddit_user: &mut reddit::User,
+    ) -> QueryResult<Self> {
+        let db_user = Self::find_id(conn, user_id)?;
+        let current_expires_at = db_user.access_token_expires_at_utc;
+        let new_expires_at = reddit_user
+            .expires_at()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        if current_expires_at != new_expires_at {
+            Self::update(
+                conn,
+                user_id,
+                &UpdateUser {
+                    access_token: reddit_user.access_token().to_owned().into(),
+                    access_token_expires_at_utc: new_expires_at.into(),
+                    ..UpdateUser::default()
+                },
+            )
+        } else {
+            Ok(db_user)
+        }
     }
 
     /// Find all `User`s in the database.
@@ -161,7 +194,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
 
     #[inline]
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let header = request.headers().get_one("Authentication");
+        let header = request.headers().get_one("Authorization");
         if header.is_none() {
             return Outcome::Failure((
                 Status::Unauthorized,
@@ -194,5 +227,20 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
             Ok(authenticated_user) => Outcome::Success(authenticated_user),
             Err(_) => Outcome::Failure((Status::BadRequest, "Unable to find user")),
         }
+    }
+}
+
+impl<'a> Into<reddit::User<'a>> for User {
+    #[inline]
+    fn into(self) -> reddit::User<'a> {
+        reddit::User::builder()
+            .with_reddit_instance(&REDDIT)
+            .with_refresh_token(self.refresh_token)
+            .with_access_token(self.access_token)
+            .with_expires_at(
+                UNIX_EPOCH + Duration::from_secs(self.access_token_expires_at_utc as u64),
+            )
+            .build()
+            .unwrap()
     }
 }

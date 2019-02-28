@@ -1,12 +1,11 @@
 use crate::{Reddit, User};
-use std::time::Instant;
+use std::time::SystemTime;
 
 pub struct UserBuilder<'a> {
     reddit_instance: Option<&'a Reddit<'a>>,
-    refresh_token: Option<String>,
-    #[allow(clippy::option_option)]
-    access_token: Option<Option<String>>,
-    expires_at: Option<Instant>,
+    refresh_token:   Option<String>,
+    access_token:    Option<String>,
+    expires_at:      Option<SystemTime>,
 }
 
 // This is explicitly _not_ an implementation of `std::default::Default`,
@@ -50,13 +49,13 @@ impl<'a> UserBuilder<'a> {
 
     // FIXME make this `const fn` when `Option<String>` is allowed
     #[inline(always)]
-    pub fn with_access_token(mut self, access_token: Option<String>) -> Self {
+    pub fn with_access_token(mut self, access_token: String) -> Self {
         self.access_token = Some(access_token);
         self
     }
 
     #[inline(always)]
-    pub const fn with_expires_at(mut self, expires_at: Instant) -> Self {
+    pub const fn with_expires_at(mut self, expires_at: SystemTime) -> Self {
         self.expires_at = Some(expires_at);
         self
     }

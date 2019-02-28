@@ -25,7 +25,31 @@ pub fn post(
     user: User,
     data: Json<ExternalInsertThread>,
 ) -> RocketResult<Created<Json<Thread>>> {
-    created!(Thread::create(&conn, &data, user.id))
+    let user_id = user.id;
+    let subreddit = &data.subreddit;
+    let mut post_id = None;
+
+    if let Some(subreddit) = subreddit {
+        let mut user: reddit::User = user.into();
+        let response = user.submit_self_post(subreddit, &data.thread_name, None);
+        User::update_access_token_if_necessary(&conn, user_id, &mut user)
+            .expect("could not update access token");
+
+        post_id = response
+            .unwrap()
+            .json::<serde_json::Value>()
+            .unwrap()
+            .get("json")
+            .unwrap()
+            .get("data")
+            .unwrap()
+            .get("id")
+            .unwrap()
+            .to_string()
+            .into();
+    }
+
+    created!(Thread::create(&conn, &data, user_id, post_id))
 }
 
 #[inline]

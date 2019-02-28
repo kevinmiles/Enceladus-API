@@ -58,7 +58,6 @@ fn create() {
     let thread = json!({
         "thread_name": guid(),
         "display_name": guid(),
-        "subreddit": guid(),
         "space__t0": rand::random::<i64>(),
         "youtube_id": guid()[0..11],
         "event_column_headers": [],
@@ -84,13 +83,13 @@ fn create() {
             "id": null,
             "created_by_user_id": user_id,
             "post_id": null,
+            "subreddit": null,
             "sections_id": [],
             "events_id": [],
 
             // user-provided
             "thread_name": thread["thread_name"],
             "display_name": thread["display_name"],
-            "subreddit": thread["subreddit"],
             "youtube_id": thread["youtube_id"],
             "event_column_headers": thread["event_column_headers"],
         })
