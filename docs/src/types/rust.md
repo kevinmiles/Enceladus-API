@@ -41,7 +41,6 @@ struct User {
   id: i32,
   reddit_username: String,
   lang: String,
-  refresh_token: String,
   is_global_admin: bool,
   spacex__is_admin: bool,
   spacex__is_mod: bool,

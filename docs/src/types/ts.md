@@ -40,7 +40,6 @@ type User = {
   id: number;
   reddit_username: string;
   lang: string;
-  refresh_token: string;
   is_global_admin: boolean;
   spacex__is_admin: boolean;
   spacex__is_mod: boolean;
