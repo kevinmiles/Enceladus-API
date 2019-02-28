@@ -37,7 +37,11 @@ pub fn post(
             return Err(Status::UnprocessableEntity);
         }
 
-        return created!(Event::create(&conn, &data));
+        let ret_val = created!(Event::create(&conn, &data));
+
+        thread.update_on_reddit(&conn).unwrap();
+
+        return ret_val;
     }
 
     Err(Status::Unauthorized)
@@ -51,10 +55,17 @@ pub fn patch(
     id: i32,
     data: Json<UpdateEvent>,
 ) -> RocketResult<Json<Event>> {
-    let event = Event::find_id(&conn, id);
+    if let Ok(event) = Event::find_id(&conn, id) {
+        if user.can_modify_thread(&conn, event.in_thread_id) {
+            let ret_val = json_result!(Event::update(&conn, id, &data));
 
-    if event.is_ok() && user.can_modify_thread(&conn, event.unwrap().in_thread_id) {
-        return json_result!(Event::update(&conn, id, &data));
+            Thread::find_id(&conn, event.in_thread_id)
+                .unwrap()
+                .update_on_reddit(&conn)
+                .unwrap();
+
+            return ret_val;
+        }
     }
 
     Err(Status::Unauthorized)
@@ -63,10 +74,17 @@ pub fn patch(
 #[inline]
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, user: User, id: i32) -> RocketResult<Status> {
-    let event = Event::find_id(&conn, id);
+    if let Ok(event) = Event::find_id(&conn, id) {
+        if user.can_modify_thread(&conn, event.in_thread_id) {
+            let ret_val = no_content!(Event::delete(&conn, id));
 
-    if event.is_ok() && user.can_modify_thread(&conn, event.unwrap().in_thread_id) {
-        return no_content!(Event::delete(&conn, id));
+            Thread::find_id(&conn, event.in_thread_id)
+                .unwrap()
+                .update_on_reddit(&conn)
+                .unwrap();
+
+            return ret_val;
+        }
     }
 
     Err(Status::Unauthorized)

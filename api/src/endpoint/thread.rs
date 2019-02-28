@@ -31,22 +31,12 @@ pub fn post(
 
     if let Some(subreddit) = subreddit {
         let mut user: reddit::User = user.into();
-        let response = user.submit_self_post(subreddit, &data.thread_name, None);
+        post_id = Some(
+            user.submit_self_post(subreddit, &data.thread_name, None)
+                .expect("error posting to Reddit"),
+        );
         User::update_access_token_if_necessary(&conn, user_id, &mut user)
             .expect("could not update access token");
-
-        post_id = response
-            .unwrap()
-            .json::<serde_json::Value>()
-            .unwrap()
-            .get("json")
-            .unwrap()
-            .get("data")
-            .unwrap()
-            .get("id")
-            .unwrap()
-            .to_string()
-            .into();
     }
 
     created!(Thread::create(&conn, &data, user_id, post_id))
@@ -87,6 +77,11 @@ pub fn patch(
             return Err(Status::PreconditionFailed);
         }
     }
+
+    Thread::find_id(&conn, id)
+        .unwrap()
+        .update_on_reddit(&conn)
+        .unwrap();
 
     return json_result!(Thread::update(&conn, id, &data));
 }

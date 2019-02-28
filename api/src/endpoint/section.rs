@@ -1,5 +1,13 @@
 use crate::{
-    controller::{ExternalLockSection, InsertSection, LockSection, Section, UpdateSection, User},
+    controller::{
+        ExternalLockSection,
+        InsertSection,
+        LockSection,
+        Section,
+        Thread,
+        UpdateSection,
+        User,
+    },
     endpoint::helpers::RocketResult,
     DataDB,
 };
@@ -23,7 +31,14 @@ pub fn post(
     data: Json<InsertSection>,
 ) -> RocketResult<Created<Json<Section>>> {
     if user.can_modify_thread(&conn, data.in_thread_id) {
-        return created!(Section::create(&conn, &data));
+        let ret_val = created!(Section::create(&conn, &data));
+
+        Thread::find_id(&conn, data.in_thread_id)
+            .unwrap()
+            .update_on_reddit(&conn)
+            .unwrap();
+
+        return ret_val;
     }
 
     Err(Status::Unauthorized)
@@ -117,10 +132,17 @@ fn update_fields(
     id: i32,
     data: UpdateSection,
 ) -> RocketResult<Json<Section>> {
-    let section = Section::find_id(&conn, id);
+    if let Ok(section) = Section::find_id(&conn, id) {
+        if user.can_modify_thread(&conn, section.in_thread_id) {
+            let ret_val = json_result!(Section::update(&conn, id, &data));
 
-    if section.is_ok() && user.can_modify_thread(&conn, section.unwrap().in_thread_id) {
-        return json_result!(Section::update(&conn, id, &data));
+            Thread::find_id(&conn, section.in_thread_id)
+                .unwrap()
+                .update_on_reddit(&conn)
+                .unwrap();
+
+            return ret_val;
+        }
     }
 
     Err(Status::Unauthorized)
@@ -129,10 +151,17 @@ fn update_fields(
 #[inline]
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, user: User, id: i32) -> RocketResult<Status> {
-    let section = Section::find_id(&conn, id);
+    if let Ok(section) = Section::find_id(&conn, id) {
+        if user.can_modify_thread(&conn, section.in_thread_id) {
+            let ret_val = no_content!(Section::delete(&conn, id));
 
-    if section.is_ok() && user.can_modify_thread(&conn, section.unwrap().in_thread_id) {
-        return no_content!(Section::delete(&conn, id));
+            Thread::find_id(&conn, section.in_thread_id)
+                .unwrap()
+                .update_on_reddit(&conn)
+                .unwrap();
+
+            return ret_val;
+        }
     }
 
     Err(Status::Unauthorized)

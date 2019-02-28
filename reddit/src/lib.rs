@@ -208,6 +208,43 @@ impl User<'_> {
             .bearer_auth(self.access_token())
             .send()
     }
+
+    #[inline]
+    pub fn submit(
+        &mut self,
+        subreddit: &str,
+        title: &str,
+        text: Option<&str>,
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        CLIENT
+            .post(&endpoint("/api/submit"))
+            .header(USER_AGENT, self.reddit_instance.user_agent)
+            .bearer_auth(self.access_token())
+            .form(&[
+                ("kind", "self"),
+                ("api_type", "json"),
+                ("extensions", "json"),
+                ("sendreplies", "false"),
+                ("sr", subreddit),
+                ("title", title),
+                ("text", text.unwrap_or_default()),
+            ])
+            .send()
+    }
+
+    #[inline]
+    pub fn edit(
+        &mut self,
+        thing_id: &str,
+        text: &str,
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        CLIENT
+            .post(&endpoint("/api/editusertext"))
+            .header(USER_AGENT, self.reddit_instance.user_agent)
+            .bearer_auth(self.access_token())
+            .form(&[("api_type", "json"), ("thing_id", thing_id), ("text", text)])
+            .send()
+    }
 }
 
 /// Methods that use endpoints
@@ -243,25 +280,26 @@ impl User<'_> {
         subreddit: &str,
         title: &str,
         text: Option<&str>,
-    ) -> Result<reqwest::Response, reqwest::Error> {
-        CLIENT
-            .post(&endpoint("/api/submit"))
-            .header(USER_AGENT, self.reddit_instance.user_agent)
-            .bearer_auth(self.access_token())
-            .form(&[
-                ("kind", "self"),
-                ("api_type", "json"),
-                ("extensions", "json"),
-                ("sendreplies", "false"),
-                ("sr", subreddit),
-                ("title", title),
-                ("text", text.unwrap_or_default()),
-            ])
-            .send()
+    ) -> Result<String, reqwest::Error> {
+        Ok(self
+            .submit(subreddit, title, text)?
+            .json::<serde_json::Value>()
+            .unwrap()
+            .get("json")
+            .unwrap()
+            .get("data")
+            .unwrap()
+            .get("id")
+            .unwrap()
+            .to_string())
+    }
+
+    #[inline]
+    pub fn edit_self_post(&mut self, thing_id: &str, text: &str) -> Result<(), reqwest::Error> {
+        self.edit(thing_id, text).map(|_| ())
     }
 
     // TODO
-    // edit self post
     // approve submission
     // set sticky
 }

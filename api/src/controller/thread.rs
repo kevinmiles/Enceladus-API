@@ -2,6 +2,7 @@
 
 use super::{Section, ToMarkdown, THREAD_CACHE_SIZE};
 use crate::{
+    controller::User,
     schema::thread::{self, dsl::*},
     Database,
 };
@@ -115,6 +116,26 @@ impl Thread {
         thread_json["events"] = serde_json::to_value(events).unwrap();
 
         Ok(thread_json)
+    }
+
+    #[inline]
+    pub fn update_on_reddit(&self, conn: &Database) -> QueryResult<()> {
+        if self.post_id.is_none() {
+            return Ok(());
+        }
+
+        let mut user: reddit::User = User::find_id(conn, self.created_by_user_id)?.into();
+
+        user.edit_self_post(
+            &format!("t3_{}", self.post_id.clone().unwrap()),
+            &self.to_markdown(conn).unwrap(),
+        )
+        .expect("error updating post on Reddit");
+
+        User::update_access_token_if_necessary(conn, self.created_by_user_id, &mut user)
+            .expect("could not update access token");
+
+        Ok(())
     }
 
     /// Find a given `Thread` by its ID.
