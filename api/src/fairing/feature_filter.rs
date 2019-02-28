@@ -46,10 +46,7 @@ impl Fairing for FeatureFilter {
             .get_query_value("features")
             .unwrap_or_else(|| Ok("".into()))
             .unwrap();
-        let features: &HashSet<String> = &features
-            .split(',')
-            .map(|feature| feature.to_lowercase())
-            .collect();
+        let features: &HashSet<String> = &features.split(',').map(str::to_lowercase).collect();
 
         let mut body: Json = {
             let body_string = response.body_string();

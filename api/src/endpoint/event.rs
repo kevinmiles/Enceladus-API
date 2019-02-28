@@ -47,13 +47,63 @@ pub fn post(
     Err(Status::Unauthorized)
 }
 
+// We need to define a type discriminant to allow Rocket to discern between
+// an update on all columns and an update on a specific column.
+//
+// When updating all columns,
+// we're expecting a regular `UpdateEvent` object.
+// When updating a single column,
+// we're expecting an array containing the [key, new value].
+#[derive(serde::Deserialize)]
+#[serde(untagged)]
+pub enum UpdateEventDiscriminant {
+    FullEvent(UpdateEvent),
+    PartialEvent(Vec<(usize, serde_json::Value)>),
+}
+
+// Discriminate between the two types,
+// calling the appropraite method as necessary.
 #[inline]
 #[patch("/<id>", data = "<data>")]
 pub fn patch(
     conn: DataDB,
     user: User,
     id: i32,
-    data: Json<UpdateEvent>,
+    data: Json<UpdateEventDiscriminant>,
+) -> RocketResult<Json<Event>> {
+    use UpdateEventDiscriminant::*;
+    match data.into_inner() {
+        FullEvent(data) => patch_full_event(conn, user, id, data),
+        PartialEvent(data) => {
+            if let Ok(mut event) = Event::find_id(&conn, id) {
+                let event_fields = &mut event.cols;
+
+                for (key, value) in data.into_iter() {
+                    event_fields[key] = value;
+                }
+
+                patch_full_event(
+                    conn,
+                    user,
+                    id,
+                    UpdateEvent {
+                        cols: Some(event.cols),
+                        ..UpdateEvent::default()
+                    },
+                )
+            } else {
+                Err(Status::NotFound)
+            }
+        }
+    }
+}
+
+#[inline]
+pub fn patch_full_event(
+    conn: DataDB,
+    user: User,
+    id: i32,
+    data: UpdateEvent,
 ) -> RocketResult<Json<Event>> {
     if let Ok(event) = Event::find_id(&conn, id) {
         if user.can_modify_thread(&conn, event.in_thread_id) {
@@ -64,11 +114,13 @@ pub fn patch(
                 .update_on_reddit(&conn)
                 .unwrap();
 
-            return ret_val;
+            ret_val
+        } else {
+            Err(Status::Unauthorized)
         }
+    } else {
+        Err(Status::NotFound)
     }
-
-    Err(Status::Unauthorized)
 }
 
 #[inline]

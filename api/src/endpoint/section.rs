@@ -141,11 +141,13 @@ fn update_fields(
                 .update_on_reddit(&conn)
                 .unwrap();
 
-            return ret_val;
+            ret_val
+        } else {
+            Err(Status::Unauthorized)
         }
+    } else {
+        Err(Status::NotFound)
     }
-
-    Err(Status::Unauthorized)
 }
 
 #[inline]

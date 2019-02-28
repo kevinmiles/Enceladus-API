@@ -102,6 +102,7 @@ fn update() {
     assert_eq!(created_value["posted"].as_bool(), Some(false));
 
     // test
+    // update a regular field
     let data = json!({ "posted": true });
     let body = client
         .with_base(BASE)
@@ -109,6 +110,15 @@ fn update() {
         .assert_ok()
         .get_body_object();
     assert_eq!(body["posted"], data["posted"]);
+
+    // update a specific column
+    let data = json!([[2, guid()]]);
+    let body = client
+        .with_base(BASE)
+        .patch(Some(&user_token), &created_value["id"], &data)
+        .assert_ok()
+        .get_body_object();
+    assert_eq!(body["cols"][2], data[0][1]);
 
     // teardown
     client

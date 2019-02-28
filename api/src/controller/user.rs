@@ -93,7 +93,7 @@ impl User {
         };
 
         // The user is a local admin.
-        if self.is_admin_of(thread.subreddit.as_ref().map(|s| s.as_str())) {
+        if self.is_admin_of(thread.subreddit.as_ref().map(String::as_str)) {
             return true;
         }
 
