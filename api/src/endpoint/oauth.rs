@@ -8,7 +8,12 @@ use lazy_static::lazy_static;
 use reddit::Reddit;
 use request::Url;
 use reqwest as request;
-use rocket::{get, http::RawStr, response::Redirect, uri};
+use rocket::{
+    get,
+    http::{Cookie, Cookies, RawStr},
+    response::Redirect,
+    uri,
+};
 use std::{
     error::Error,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -37,10 +42,6 @@ lazy_static! {
         .unwrap();
 }
 
-// TODO store this data in cookies,
-// such that we can avoid going to reddit
-// if another app asks for authentication
-
 /// Endpoint that redirects the user to Reddit,
 /// requesting to provided permissions.
 ///
@@ -48,8 +49,35 @@ lazy_static! {
 /// in order to avoid any user input or external requests.
 #[inline]
 #[get("/?<callback>")]
-pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<dyn Error>> {
+pub fn oauth(
+    conn: DataDB,
+    mut cookies: Cookies,
+    callback: &RawStr,
+) -> Result<Redirect, Box<dyn Error>> {
     let callback = callback.to_string();
+
+    // If the user has previously authenticated with Enceladus on this device,
+    // they should have a cookie set with their user ID.
+    // Let's read that and avoid sending the user to re-authenticate.
+    if let Some(user_id) = cookies.get_private("user_id") {
+        let user = User::find_id(&conn, user_id.value().parse()?)?;
+
+        // Give the user a token that should be used in the future.
+        let token = Claim::new(user.id).encode()?;
+
+        // Attach additional querystring parameters to the provided callback.
+        let callback = Url::parse_with_params(
+            &callback,
+            &[
+                ("user_id", &user.id.to_string()),
+                ("username", &user.reddit_username),
+                ("lang", &user.lang),
+                ("token", &token),
+            ],
+        )?;
+
+        return Ok(Redirect::to(callback.to_string()));
+    }
 
     if cfg!(test) {
         // We're testing; let's not bother with actual authentication.
@@ -87,7 +115,12 @@ pub fn oauth(callback: &RawStr) -> Result<Redirect, Box<dyn Error>> {
 /// typically by contacting the database operator.
 #[inline]
 #[get("/callback?<code>&<state>")]
-pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, Box<dyn Error>> {
+pub fn callback(
+    conn: DataDB,
+    mut cookies: Cookies,
+    code: String,
+    state: String,
+) -> Result<Redirect, Box<dyn Error>> {
     let mut reddit_user;
     let lang;
     let username;
@@ -127,6 +160,13 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
                 .as_secs() as i64,
         },
     )?;
+
+    // Add a cookie so we don't have to re-authetnicate when the user visits again.
+    cookies.add_private(
+        Cookie::build("user_id", user.id.to_string())
+            .permanent()
+            .finish(),
+    );
 
     // Give the user a token that should be used in the future.
     let token = Claim::new(user.id).encode()?;
