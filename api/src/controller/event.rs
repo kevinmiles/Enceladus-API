@@ -1,6 +1,5 @@
 use super::{Thread, ToMarkdown, UpdateThread, EVENT_CACHE_SIZE};
 use crate::{schema::event, Database};
-use chrono::NaiveDateTime;
 use enceladus_macros::generate_structs;
 use lazy_static::lazy_static;
 use lru_cache::LruCache;
@@ -146,14 +145,11 @@ impl ToMarkdown for Event {
                 // If the column in question is the designated UTC timestamp,
                 // format it as such.
                 if Some(i) == utc_col_index {
-                    if !val.is_i64() {
-                        panic!("Expected i64 in UTC column");
-                    }
+                    let timestamp = val.as_i64().expect("expected i64 in UTC column");
+                    let hours = timestamp % 86_400 / 3_600;
+                    let minutes = timestamp % 3_600 / 60;
 
-                    NaiveDateTime::from_timestamp(val.as_i64().unwrap(), 0)
-                        .time()
-                        .format("%H:%M")
-                        .to_string()
+                    format!("{:02}:{:02}", hours, minutes)
                 } else {
                     use serde_json::Value::*;
                     match val {

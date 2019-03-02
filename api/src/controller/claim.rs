@@ -1,7 +1,7 @@
-use chrono::Utc;
 use jsonwebtoken as jwt;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 lazy_static! {
     static ref HEADER: jwt::Header = jwt::Header::default();
@@ -17,7 +17,7 @@ const ROCKET_SECRET_KEY: &[u8] = dotenv!("ROCKET_SECRET_KEY").as_bytes();
 #[derive(Serialize, Deserialize)]
 pub struct Claim {
     user_id: i32,
-    iat:     i64,
+    iat:     u64,
 }
 
 impl Claim {
@@ -25,7 +25,10 @@ impl Claim {
     pub fn new(user_id: i32) -> Claim {
         Claim {
             user_id,
-            iat: Utc::now().timestamp(),
+            iat: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
         }
     }
 
