@@ -42,12 +42,12 @@ table! {
         id -> Int4,
         reddit_username -> Text,
         lang -> Varchar,
-        refresh_token -> Text,
+        refresh_token -> Bytea,
         is_global_admin -> Bool,
         spacex__is_admin -> Bool,
         spacex__is_mod -> Bool,
         spacex__is_slack_member -> Bool,
-        access_token -> Varchar,
+        access_token -> Bytea,
         access_token_expires_at_utc -> Int8,
     }
 }

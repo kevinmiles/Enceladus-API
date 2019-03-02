@@ -2,6 +2,7 @@
 
 use super::{Claim, Thread, USER_CACHE_SIZE};
 use crate::{
+    encryption::{decrypt, encrypt},
     endpoint::oauth::REDDIT,
     schema::user::{self, dsl::*},
     DataDB,
@@ -17,6 +18,10 @@ use rocket::{
     Outcome,
 };
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+#[cfg(test)]
+use rocket_contrib::json::Json;
+#[cfg(test)]
+use serde::Deserialize;
 use std::time::{Duration, UNIX_EPOCH};
 
 lazy_static! {
@@ -39,13 +44,96 @@ generate_structs! {
         auto id: i32,
         readonly reddit_username: String,
         lang: String = "en",
-        private refresh_token: String,
+        private refresh_token: Vec<u8>,
         is_global_admin: bool = false,
         spacex__is_admin: bool = false,
         spacex__is_mod: bool = false,
         spacex__is_slack_member: bool = false,
-        private access_token: String,
+        private access_token: Vec<u8>,
         private access_token_expires_at_utc: i64,
+    }
+}
+
+// TODO make these macros!
+
+#[cfg(test)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExternalUpdateUser {
+    pub lang: Option<String>,
+    pub refresh_token: Option<String>,
+    pub is_global_admin: Option<bool>,
+    pub spacex__is_admin: Option<bool>,
+    pub spacex__is_mod: Option<bool>,
+    pub spacex__is_slack_member: Option<bool>,
+    pub access_token: Option<String>,
+    pub access_token_expires_at_utc: Option<i64>,
+}
+
+#[cfg(test)]
+impl Into<UpdateUser> for Json<ExternalUpdateUser> {
+    #[inline]
+    fn into(self) -> UpdateUser {
+        UpdateUser {
+            lang: self.lang.clone(),
+            refresh_token: self.refresh_token.clone().map(|s| encrypt(&s)),
+            is_global_admin: self.is_global_admin,
+            spacex__is_admin: self.spacex__is_admin,
+            spacex__is_mod: self.spacex__is_mod,
+            spacex__is_slack_member: self.spacex__is_slack_member,
+            access_token: self.access_token.clone().map(|s| encrypt(&s)),
+            access_token_expires_at_utc: self.access_token_expires_at_utc,
+        }
+    }
+}
+
+#[cfg(test)]
+#[inline(always)]
+fn en() -> String {
+    "en".into()
+}
+
+#[cfg(test)]
+#[inline(always)]
+const fn falsey() -> bool {
+    false
+}
+
+#[cfg(test)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExternalInsertUser {
+    pub reddit_username: String,
+    #[serde(default = "en")]
+    pub lang: String,
+    pub refresh_token: String,
+    #[serde(default = "falsey")]
+    pub is_global_admin: bool,
+    #[serde(default = "falsey")]
+    pub spacex__is_admin: bool,
+    #[serde(default = "falsey")]
+    pub spacex__is_mod: bool,
+    #[serde(default = "falsey")]
+    pub spacex__is_slack_member: bool,
+    pub access_token: String,
+    pub access_token_expires_at_utc: i64,
+}
+
+#[cfg(test)]
+impl Into<InsertUser> for Json<ExternalInsertUser> {
+    #[inline]
+    fn into(self) -> InsertUser {
+        InsertUser {
+            reddit_username: self.reddit_username.clone(),
+            lang: self.lang.clone(),
+            refresh_token: encrypt(&self.refresh_token),
+            is_global_admin: self.is_global_admin,
+            spacex__is_admin: self.spacex__is_admin,
+            spacex__is_mod: self.spacex__is_mod,
+            spacex__is_slack_member: self.spacex__is_slack_member,
+            access_token: encrypt(&self.access_token),
+            access_token_expires_at_utc: self.access_token_expires_at_utc,
+        }
     }
 }
 
@@ -120,7 +208,7 @@ impl User {
                 conn,
                 user_id,
                 &UpdateUser {
-                    access_token: reddit_user.access_token().to_owned().into(),
+                    access_token: encrypt(reddit_user.access_token().as_ref()).into(),
                     access_token_expires_at_utc: new_expires_at.into(),
                     ..UpdateUser::default()
                 },
@@ -235,8 +323,8 @@ impl<'a> Into<reddit::User<'a>> for User {
     fn into(self) -> reddit::User<'a> {
         reddit::User::builder()
             .with_reddit_instance(&REDDIT)
-            .with_refresh_token(self.refresh_token)
-            .with_access_token(self.access_token)
+            .with_refresh_token(decrypt(&*self.refresh_token))
+            .with_access_token(decrypt(&*self.access_token))
             .with_expires_at(
                 UNIX_EPOCH + Duration::from_secs(self.access_token_expires_at_utc as u64),
             )

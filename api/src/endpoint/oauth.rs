@@ -1,5 +1,6 @@
 use crate::{
     controller::{Claim, InsertUser, User},
+    encryption::encrypt,
     guid,
     DataDB,
 };
@@ -113,12 +114,12 @@ pub fn callback(conn: DataDB, code: String, state: String) -> Result<Redirect, B
         &InsertUser {
             reddit_username: username.to_owned(),
             lang: lang.to_owned(),
-            refresh_token: reddit_user.refresh_token().clone(),
+            refresh_token: encrypt(reddit_user.refresh_token().as_ref()),
             is_global_admin: false,
             spacex__is_admin: false,
             spacex__is_mod: false,
             spacex__is_slack_member: false,
-            access_token: reddit_user.access_token().clone(),
+            access_token: encrypt(reddit_user.access_token().as_ref()),
             access_token_expires_at_utc: reddit_user
                 .expires_at()
                 .duration_since(UNIX_EPOCH)

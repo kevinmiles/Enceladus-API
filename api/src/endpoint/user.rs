@@ -5,7 +5,7 @@ use crate::controller::User;
 #[cfg(test)]
 use {
     crate::{
-        controller::{Claim, InsertUser, UpdateUser},
+        controller::{Claim, ExternalInsertUser, ExternalUpdateUser},
         endpoint::helpers::RocketResult,
         DataDB,
     },
@@ -21,15 +21,18 @@ generic_get!(User);
 #[cfg(test)]
 #[inline]
 #[post("/", data = "<data>")]
-pub fn post(conn: DataDB, data: Json<InsertUser>) -> RocketResult<Created<Json<TokenUser>>> {
-    created!(User::create(&conn, &data).map(TokenUser::from))
+pub fn post(
+    conn: DataDB,
+    data: Json<ExternalInsertUser>,
+) -> RocketResult<Created<Json<TokenUser>>> {
+    created!(User::create(&conn, &data.into()).map(TokenUser::from))
 }
 
 #[cfg(test)]
 #[inline]
 #[patch("/<id>", data = "<data>")]
-pub fn patch(conn: DataDB, id: i32, data: Json<UpdateUser>) -> RocketResult<Json<User>> {
-    json_result!(User::update(&conn, id, &data))
+pub fn patch(conn: DataDB, id: i32, data: Json<ExternalUpdateUser>) -> RocketResult<Json<User>> {
+    json_result!(User::update(&conn, id, &data.into()))
 }
 
 #[cfg(test)]

@@ -3,3 +3,4 @@
 .env
 /docs/book
 /.vscode
+/api/src/.db_key

@@ -10,6 +10,7 @@ extern crate diesel;
 extern crate dotenv_codegen;
 
 mod controller;
+mod encryption;
 mod endpoint;
 mod fairing;
 mod schema;
