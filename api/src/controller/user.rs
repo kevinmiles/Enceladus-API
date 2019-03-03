@@ -138,10 +138,16 @@ impl Into<InsertUser> for Json<ExternalInsertUser> {
 }
 
 impl User {
+    /// Check if the user is a moderator of a given subreddit.
+    #[inline]
+    pub fn is_moderator_of(&self, subreddit: Option<&str>) -> bool {
+        match subreddit {
+            Some("spacex") => self.spacex__is_mod,
+            _ => false,
+        }
+    }
+
     /// Check if the user is an admin of a given subreddit.
-    ///
-    /// This is necessary, as Rust gives us no other way of
-    /// accessing fields dynamically at runtime.
     #[inline]
     pub fn is_admin_of(&self, subreddit: Option<&str>) -> bool {
         match subreddit {

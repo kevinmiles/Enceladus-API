@@ -75,6 +75,9 @@ pub fn server() -> Rocket {
                 thread::get_full,
                 thread::post,
                 thread::patch,
+                thread::approve,
+                thread::sticky,
+                thread::unsticky,
                 thread::delete,
             ],
         )

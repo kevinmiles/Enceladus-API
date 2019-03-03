@@ -192,7 +192,7 @@ fn endpoint(path: &str) -> String {
 /// Endpoints
 impl User<'_> {
     #[inline]
-    pub fn me(&mut self) -> Result<reqwest::Response, reqwest::Error> {
+    fn me(&mut self) -> Result<reqwest::Response, reqwest::Error> {
         CLIENT
             .get(&endpoint("/api/v1/me"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
@@ -201,7 +201,7 @@ impl User<'_> {
     }
 
     #[inline]
-    pub fn prefs(&mut self) -> Result<reqwest::Response, reqwest::Error> {
+    fn prefs(&mut self) -> Result<reqwest::Response, reqwest::Error> {
         CLIENT
             .get(&endpoint("/api/v1/me/prefs"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
@@ -210,7 +210,7 @@ impl User<'_> {
     }
 
     #[inline]
-    pub fn submit(
+    fn submit(
         &mut self,
         subreddit: &str,
         title: &str,
@@ -233,16 +233,40 @@ impl User<'_> {
     }
 
     #[inline]
-    pub fn edit(
-        &mut self,
-        thing_id: &str,
-        text: &str,
-    ) -> Result<reqwest::Response, reqwest::Error> {
+    fn edit(&mut self, thing_id: &str, text: &str) -> Result<reqwest::Response, reqwest::Error> {
         CLIENT
             .post(&endpoint("/api/editusertext"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
             .bearer_auth(self.access_token())
             .form(&[("api_type", "json"), ("thing_id", thing_id), ("text", text)])
+            .send()
+    }
+
+    #[inline]
+    fn approve_internal(&mut self, thing_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+        CLIENT
+            .post(&endpoint("/api/approve"))
+            .header(USER_AGENT, self.reddit_instance.user_agent)
+            .bearer_auth(self.access_token())
+            .form(&[("id", thing_id)])
+            .send()
+    }
+
+    #[inline]
+    fn set_sticky_internal(
+        &mut self,
+        thing_id: &str,
+        state: bool,
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        CLIENT
+            .post(&endpoint("/api/set_subreddit_sticky"))
+            .header(USER_AGENT, self.reddit_instance.user_agent)
+            .bearer_auth(self.access_token())
+            .form(&[
+                ("api_type", "json"),
+                ("id", thing_id),
+                ("state", &state.to_string()),
+            ])
             .send()
     }
 }
@@ -299,7 +323,13 @@ impl User<'_> {
         self.edit(thing_id, text).map(|_| ())
     }
 
-    // TODO
-    // approve submission
-    // set sticky
+    #[inline]
+    pub fn approve(&mut self, thing_id: &str) -> Result<(), reqwest::Error> {
+        self.approve_internal(thing_id).map(|_| ())
+    }
+
+    #[inline]
+    pub fn set_sticky(&mut self, thing_id: &str, state: bool) -> Result<(), reqwest::Error> {
+        self.set_sticky_internal(thing_id, state).map(|_| ())
+    }
 }

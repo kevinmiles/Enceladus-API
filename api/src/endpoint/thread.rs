@@ -87,6 +87,87 @@ pub fn patch(
 }
 
 #[inline]
+#[patch("/<id>/approve")]
+pub fn approve(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
+    let thread = {
+        let thread = Thread::find_id(&conn, id);
+
+        // The thread doesn't exist.
+        if thread.is_err() {
+            return Err(Status::NotFound);
+        }
+
+        let thread = thread.unwrap();
+
+        // The thread doesn't exist on Reddit,
+        // so we're unable to do anything here.
+        if thread.post_id.is_none() {
+            return Err(Status::PreconditionFailed);
+        }
+
+        thread
+    };
+
+    if !user.is_moderator_of(thread.subreddit.as_ref().map(String::as_str)) {
+        return Err(Status::Unauthorized);
+    }
+
+    let mut user: reddit::User = user.into();
+    user.approve(&format!("t3_{}", thread.post_id.unwrap()))
+        .expect("error approving thread");
+    User::update_access_token_if_necessary(&conn, thread.created_by_user_id, &mut user)
+        .expect("could not update access token");
+
+    Ok(Json(()))
+}
+
+#[inline]
+#[patch("/<id>/sticky")]
+pub fn sticky(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
+    set_sticky(conn, user, id, true)
+}
+
+#[inline]
+#[patch("/<id>/unsticky")]
+pub fn unsticky(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
+    set_sticky(conn, user, id, false)
+}
+
+#[inline]
+fn set_sticky(conn: DataDB, user: User, id: i32, state: bool) -> RocketResult<Json<()>> {
+    let thread = {
+        let thread = Thread::find_id(&conn, id);
+
+        // The thread doesn't exist.
+        if thread.is_err() {
+            return Err(Status::NotFound);
+        }
+
+        let thread = thread.unwrap();
+
+        // The thread doesn't exist on Reddit,
+        // so we're unable to do anything here.
+        if thread.post_id.is_none() {
+            return Err(Status::PreconditionFailed);
+        }
+
+        thread
+    };
+
+    if !user.is_moderator_of(thread.subreddit.as_ref().map(String::as_str)) {
+        return Err(Status::Unauthorized);
+    }
+
+    let mut user: reddit::User = user.into();
+    user.set_sticky(&format!("t3_{}", thread.post_id.unwrap()), state)
+        .expect("error stickying/unstickying thread");
+    User::update_access_token_if_necessary(&conn, thread.created_by_user_id, &mut user)
+        .expect("could not update access token");
+
+    Ok(Json(()))
+}
+
+#[inline]
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, user: User, id: i32) -> RocketResult<Status> {
     if user.can_modify_thread(&conn, id) {
