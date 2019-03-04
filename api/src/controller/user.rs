@@ -56,6 +56,9 @@ generate_structs! {
 
 // TODO make these macros!
 
+/// This struct is necessary to perform the requisite encryption
+/// of the refresh and access tokens.
+/// It is otherwise identical to `UpdateUser`.
 #[cfg(test)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -72,6 +75,11 @@ pub struct ExternalUpdateUser {
 
 #[cfg(test)]
 impl Into<UpdateUser> for Json<ExternalUpdateUser> {
+    /// Convert the `Json<ExternalUpdateUser>` from the endpoint
+    /// into an `UpdateUser` for consumption by the controller.
+    ///
+    /// The sole purpose of this conversion is to encrypt the
+    /// refresh and access tokens where necessary.
     #[inline]
     fn into(self) -> UpdateUser {
         UpdateUser {
@@ -87,18 +95,23 @@ impl Into<UpdateUser> for Json<ExternalUpdateUser> {
     }
 }
 
+/// Helper function for serde to have a default value when deserializing.
 #[cfg(test)]
 #[inline(always)]
 fn en() -> String {
     "en".into()
 }
 
+/// Helper function for serde to have a default value when deserializing.
 #[cfg(test)]
 #[inline(always)]
 const fn falsey() -> bool {
     false
 }
 
+/// This struct is necessary to perform the requisite encryption
+/// of the refresh and access tokens.
+/// It is otherwise identical to `InsertUser`.
 #[cfg(test)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -121,6 +134,11 @@ pub struct ExternalInsertUser {
 
 #[cfg(test)]
 impl Into<InsertUser> for Json<ExternalInsertUser> {
+    /// Convert the `Json<ExternalInsertUser>` from the endpoint
+    /// into an `InsertUser` for consumption by the controller.
+    ///
+    /// The sole purpose of this conversion is to encrypt the
+    /// refresh and access tokens where necessary.
     #[inline]
     fn into(self) -> InsertUser {
         InsertUser {
@@ -139,6 +157,8 @@ impl Into<InsertUser> for Json<ExternalInsertUser> {
 
 impl User {
     /// Check if the user is a moderator of a given subreddit.
+    ///
+    /// If the subreddit is not known, returns `false`.
     #[inline]
     pub fn is_moderator_of(&self, subreddit: Option<&str>) -> bool {
         match subreddit {
@@ -148,6 +168,8 @@ impl User {
     }
 
     /// Check if the user is an admin of a given subreddit.
+    ///
+    /// If the subreddit is not known, returns `false`.
     #[inline]
     pub fn is_admin_of(&self, subreddit: Option<&str>) -> bool {
         match subreddit {
@@ -195,6 +217,15 @@ impl User {
         thread.created_by_user_id == self.id
     }
 
+    /// When performing any request to Reddit,
+    /// we need to send an access token to authenticate ourselves.
+    /// These tokens must be refreshed every hour (currently; that's subject to change).
+    /// As such, this should be handled automatically wherever possible.
+    ///
+    /// What we do here is read in the user from the database,
+    /// check if their token should be expired (given the previously calculated timestamp).
+    /// If it is, let's request a new one from Reddit and store that
+    /// (along with its new expiration time) in the database.
     #[inline]
     pub fn update_access_token_if_necessary(
         conn: &Database,
@@ -286,13 +317,16 @@ impl User {
 impl<'a, 'r> FromRequest<'a, 'r> for User {
     type Error = &'a str;
 
+    /// Create a request guard requiring a user to be authorized with a previously issued JWT.
+    /// If the user is not found or the `Authorization` header is malformed/incorrect,
+    /// don't allow the client to continue to the rest of the request.
     #[inline]
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
         let header = request.headers().get_one("Authorization");
         if header.is_none() {
             return Outcome::Failure((
                 Status::Unauthorized,
-                r#"Expected "Authentication" header to be present"#,
+                r#"Expected "Authorization" header to be present"#,
             ));
         }
 
@@ -300,7 +334,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
         if !header_contents.starts_with("bearer ") && !header_contents.starts_with("Bearer ") {
             return Outcome::Failure((
                 Status::BadRequest,
-                r#"Expected "Authentication" header to begin with "bearer " or "Bearer ""#,
+                r#"Expected "Authorization" header to begin with "bearer " or "Bearer ""#,
             ));
         }
 
@@ -308,7 +342,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
         if user_id.is_err() {
             return Outcome::Failure((
                 Status::BadRequest,
-                r#""Authentication" header cannot be decoded"#,
+                r#""Authorization" header cannot be decoded"#,
             ));
         }
 
@@ -325,6 +359,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
 }
 
 impl<'a> Into<reddit::User<'a>> for User {
+    /// Create a `reddit::User` from a `User`.
+    /// Automatically decrypts the refresh and access tokens.
     #[inline]
     fn into(self) -> reddit::User<'a> {
         reddit::User::builder()

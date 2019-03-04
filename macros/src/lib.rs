@@ -1,4 +1,4 @@
-#![feature(proc_macro_hygiene, decl_macro, custom_attribute, const_str_as_bytes)]
+#![feature(proc_macro_hygiene, decl_macro, crate_visibility_modifier)]
 #![deny(clippy::all)]
 #![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.
 #![allow(
@@ -10,7 +10,7 @@
 extern crate proc_macro;
 
 mod keyword;
-use crate::keyword::{kw, Keyword};
+use keyword::{kw, Keyword};
 
 use proc_macro::TokenStream;
 use proc_macro2::Span;
@@ -31,6 +31,18 @@ use syn::{
     Type,
 };
 
+/// A full declaration of a `struct` & its associated fields.
+///
+/// Should be of the following form:
+///
+/// ```rust,ignore
+/// Foo("bar") {
+///     baz: String,
+///     auto qux = "default",
+///     private foobar: bool,
+///     readonly barbaz: Vec<String> = vec![],
+/// }
+/// ```
 struct Declaration {
     name:       Ident,
     _paren:     token::Paren,
@@ -40,6 +52,7 @@ struct Declaration {
 }
 
 impl Parse for Declaration {
+    /// Parse a full declaration of a `struct` & its associated fields.
     fn parse(input: ParseStream) -> Result<Self> {
         let paren_content;
         let brace_content;
@@ -54,6 +67,7 @@ impl Parse for Declaration {
     }
 }
 
+/// A single field, along with its type, optional default value, and optional attribute.
 struct Field {
     attribute: Option<Keyword>,
     name:      Ident,
@@ -63,6 +77,7 @@ struct Field {
 }
 
 impl Parse for Field {
+    /// Parse a field, likely within a full `Declaration`.
     fn parse(input: ParseStream) -> Result<Self> {
         Ok(Field {
             attribute: if input.peek(kw::auto)
@@ -87,6 +102,12 @@ impl Parse for Field {
     }
 }
 
+/// Generate the regular, insert, and update `struct`s from the AST.
+/// Additionally, for all fields that have a default value,
+/// create a function (that is always inlined) with a random name
+/// to satisfy serde's constraint on a default needing to be a function (so not literals).
+/// The names are randomly generated (and not based on any sort of hash),
+/// preventing any external observers from relying on them in any manner.
 #[proc_macro]
 pub fn generate_structs(item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as Declaration);
@@ -107,20 +128,22 @@ pub fn generate_structs(item: TokenStream) -> TokenStream {
         let typ = field.typ;
         let default = field.default;
 
-        // may or may not need this in any given iteration
+        // May or may not need this in any given iteration.
         let fn_name: String = {
+            // Get a random 20 character alphanumeric string.
             let mut rng = thread_rng();
             let rand_value: String = iter::repeat(())
                 .map(|_| rng.sample(Alphanumeric))
                 .take(20)
                 .collect();
 
-            // prefix with an underscore the prevent an identifier with an initial numeric
+            // Prefix with an underscore the prevent an identifier with an initial numeric.
             format!("_{}", rand_value)
         };
         let fn_name_ident = Ident::new(&fn_name, Span::call_site());
 
-        // set attributes indicating what actions are performed for a given field
+        // Set attributes indicating what actions are performed for a given field.
+        // These can be modified by the various `Keyword`s.
         let mut insertable = true;
         let mut updateable = true;
         let mut serializable = true;
@@ -134,16 +157,15 @@ pub fn generate_structs(item: TokenStream) -> TokenStream {
             None => {}
         };
 
-        // add the field to the general struct,
-        // skipping serialization if private
-        general_fields.push(if serializable {
-            quote!(pub #name: #typ)
-        } else {
-            quote!(#[serde(skip_serializing)] pub #name: #typ)
+        // Add the field to the general struct,
+        // skipping serialization if private.
+        general_fields.push(match serializable {
+            true => quote!(pub #name: #typ),
+            false => quote!(#[serde(skip_serializing)] pub #name: #typ),
         });
 
-        // add the field to the insertables,
-        // with an optional default
+        // Add the field to the insertables,
+        // with an optional default.
         if insertable {
             insert_fields.push(match default {
                 Some(_) => quote!(#[serde(default = #fn_name)] pub #name: #typ),
@@ -151,12 +173,14 @@ pub fn generate_structs(item: TokenStream) -> TokenStream {
             });
         }
 
-        // add the field to the updateables
+        // Add the field to the updateables.
         if updateable {
             update_fields.push(quote!(pub #name: Option<#typ>));
         }
 
-        // create the function containing our default value
+        // Create the function containing our default value.
+        // These are always inlined,
+        // as default literals should have minimal cost.
         if let Some(default) = default {
             generated_fns.push(quote! {
                 #[inline(always)]

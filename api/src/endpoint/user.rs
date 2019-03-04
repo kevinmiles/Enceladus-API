@@ -18,6 +18,7 @@ use {
 generic_all!(User);
 generic_get!(User);
 
+/// Create a `User`.
 #[cfg(test)]
 #[inline]
 #[post("/", data = "<data>")]
@@ -28,6 +29,7 @@ pub fn post(
     created!(User::create(&conn, &data.into()).map(TokenUser::from))
 }
 
+/// Update a `User`.
 #[cfg(test)]
 #[inline]
 #[patch("/<id>", data = "<data>")]
@@ -35,6 +37,7 @@ pub fn patch(conn: DataDB, id: i32, data: Json<ExternalUpdateUser>) -> RocketRes
     json_result!(User::update(&conn, id, &data.into()))
 }
 
+/// Delete a `User`.
 #[cfg(test)]
 #[inline]
 #[delete("/<id>")]
@@ -61,6 +64,9 @@ pub struct TokenUser {
 #[allow(clippy::fallible_impl_from)]
 #[cfg(test)]
 impl From<User> for TokenUser {
+    /// Create a `TokenUser`,
+    /// which is a `User` that has an additional `token` field containing a JWT.
+    #[inline]
     fn from(user: User) -> TokenUser {
         TokenUser {
             token: Claim::new(user.id).encode().unwrap(),

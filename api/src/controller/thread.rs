@@ -118,6 +118,9 @@ impl Thread {
         Ok(thread_json)
     }
 
+    /// Update a `Thread` on Reddit.
+    ///
+    /// This method will return `Ok(())` if the thread is not posted on Reddit.
     #[inline]
     pub fn update_on_reddit(&self, conn: &Database) -> QueryResult<()> {
         if self.post_id.is_none() {
@@ -211,6 +214,9 @@ impl Thread {
 }
 
 impl ToMarkdown for Thread {
+    /// Convert the `Thread` object to valid markdown.
+    /// The resulting string is intended for consumption by Reddit,
+    /// but should be valid for any markdown flavor supporting tables.
     #[inline]
     fn to_markdown(&self, conn: &Database) -> Result<String, Box<dyn Error>> {
         let mut md = String::new();

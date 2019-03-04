@@ -3,16 +3,15 @@ use syn::{
     Result,
 };
 
-// define custom keywords,
-// which alter which `struct`s the field is emitted on
-pub mod kw {
+/// Define custom keywords that alter which `struct`s the field is emitted on.
+crate mod kw {
     syn::custom_keyword!(auto);
     syn::custom_keyword!(readonly);
     syn::custom_keyword!(private);
 }
 
-// represent the keywords as a type
-pub enum Keyword {
+/// Represent the keywords as a type
+crate enum Keyword {
     /// Cannot be inserted or updated
     Auto,
 
@@ -23,8 +22,9 @@ pub enum Keyword {
     Private,
 }
 
-// let us expect any given keyword
 impl Parse for Keyword {
+    /// Allow `syn` to call our `parse` method
+    /// and receive a `Keyword` back.
     fn parse(input: ParseStream) -> Result<Self> {
         if input.peek(kw::auto) {
             input.parse::<kw::auto>()?;
@@ -36,7 +36,7 @@ impl Parse for Keyword {
             input.parse::<kw::private>()?;
             Ok(Keyword::Private)
         } else {
-            Err(input.error("expected `auto`, `readonly`, or `private`"))
+            Err(input.error("expected optional keyword `auto`, `readonly`, or `private`"))
         }
     }
 }

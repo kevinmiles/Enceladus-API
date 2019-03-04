@@ -9,6 +9,7 @@ use rocket_contrib::json::Json;
 generic_all!(Event);
 generic_get!(Event);
 
+/// Create an `Event`.
 #[inline]
 #[post("/", data = "<data>")]
 pub fn post(
@@ -47,13 +48,13 @@ pub fn post(
     Err(Status::Unauthorized)
 }
 
-// We need to define a type discriminant to allow Rocket to discern between
-// an update on all columns and an update on a specific column.
-//
-// When updating all columns,
-// we're expecting a regular `UpdateEvent` object.
-// When updating a single column,
-// we're expecting an array containing the [key, new value].
+/// We need to define a type discriminant to allow Rocket to discern between
+/// an update on all columns and an update on a specific column.
+///
+/// When updating all columns,
+/// we're expecting a regular `UpdateEvent` object.
+/// When updating a single column,
+/// we're expecting an array containing the [key, new value].
 #[derive(serde::Deserialize)]
 #[serde(untagged)]
 pub enum UpdateEventDiscriminant {
@@ -61,8 +62,8 @@ pub enum UpdateEventDiscriminant {
     PartialEvent(Vec<(usize, serde_json::Value)>),
 }
 
-// Discriminate between the two types,
-// calling the appropraite method as necessary.
+/// Discriminate between the two types,
+/// calling the `patch_full_event` method as necessary.
 #[inline]
 #[patch("/<id>", data = "<data>")]
 pub fn patch(
@@ -98,6 +99,7 @@ pub fn patch(
     }
 }
 
+/// Update the `Event` on Reddit and in the database.
 #[inline]
 pub fn patch_full_event(
     conn: DataDB,
@@ -123,6 +125,7 @@ pub fn patch_full_event(
     }
 }
 
+/// Delete an `Event` as well as any references to its ID.
 #[inline]
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, user: User, id: i32) -> RocketResult<Status> {

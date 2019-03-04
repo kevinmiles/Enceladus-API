@@ -14,6 +14,9 @@ lazy_static! {
 
 const ROCKET_SECRET_KEY: &[u8] = dotenv!("ROCKET_SECRET_KEY").as_bytes();
 
+/// This represents the body ("claim") of the JWT used for authorization.
+/// The `user_id` matches with the ID of a `User` object in the database,
+/// while `iat` is the UTC timestamp the token was issued at.
 #[derive(Serialize, Deserialize)]
 pub struct Claim {
     user_id: i32,
@@ -21,6 +24,8 @@ pub struct Claim {
 }
 
 impl Claim {
+    /// Create a new `Claim` object with the provided `user_id`.
+    /// The `iat` field is automatically generated.
     #[inline]
     pub fn new(user_id: i32) -> Claim {
         Claim {
@@ -32,11 +37,13 @@ impl Claim {
         }
     }
 
+    /// Convert the existing `struct` into a valid JWT.
     #[inline]
     pub fn encode(&self) -> Result<String, jsonwebtoken::errors::Error> {
         jwt::encode(&HEADER, self, ROCKET_SECRET_KEY)
     }
 
+    /// Obtain the `user_id` field of a JWT passed as a parameter.
     #[inline]
     pub fn get_user_id(token: &str) -> Result<i32, jsonwebtoken::errors::Error> {
         Ok(jwt::decode::<Claim>(token, ROCKET_SECRET_KEY, &VALIDATION)?

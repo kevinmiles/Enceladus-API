@@ -1,6 +1,9 @@
 use rocket::get;
 use serde_json::json;
 
+/// Return information about the repository itself.
+///
+/// This endpoint is not versioned.
 #[inline]
 #[get("/")]
 pub fn meta() -> String {

@@ -10,6 +10,7 @@ use std::collections::BTreeSet;
 generic_all!(Thread);
 generic_get!(Thread);
 
+/// Get the `Thread` along with its `Section`s, `Event`s, author, and section locks.
 #[inline]
 #[get("/<id>/full")]
 pub fn get_full(conn: DataDB, id: i32) -> RocketResult<JsonValue> {
@@ -18,6 +19,7 @@ pub fn get_full(conn: DataDB, id: i32) -> RocketResult<JsonValue> {
         .into())
 }
 
+/// Create a `Thread`.
 #[inline]
 #[post("/", data = "<data>")]
 pub fn post(
@@ -42,6 +44,7 @@ pub fn post(
     created!(Thread::create(&conn, &data, user_id, post_id))
 }
 
+/// Update a `Thread`.
 #[inline]
 #[patch("/<id>", data = "<data>")]
 pub fn patch(
@@ -86,6 +89,9 @@ pub fn patch(
     return json_result!(Thread::update(&conn, id, &data));
 }
 
+/// Approve a `Thread` on Reddit.
+/// Does not perform any action in the database,
+/// aside from potentially updating a `User`'s access token.
 #[inline]
 #[patch("/<id>/approve")]
 pub fn approve(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
@@ -121,18 +127,27 @@ pub fn approve(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
     Ok(Json(()))
 }
 
+/// Sticky a `Thread` on Reddit.
+/// Does not perform any action in the database,
+/// aside from potentially updating a `User`'s access token.
 #[inline]
 #[patch("/<id>/sticky")]
 pub fn sticky(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
     set_sticky(conn, user, id, true)
 }
 
+/// Unsticky a `Thread` on Reddit.
+/// Does not perform any action in the database,
+/// aside from potentially updating a `User`'s access token.
 #[inline]
 #[patch("/<id>/unsticky")]
 pub fn unsticky(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
     set_sticky(conn, user, id, false)
 }
 
+/// Sets whether a `Thread` should be stickied or unstickied on Reddit.
+/// Does not perform any action in the database,
+/// aside from potentially updating a `User`'s access token.
 #[inline]
 fn set_sticky(conn: DataDB, user: User, id: i32, state: bool) -> RocketResult<Json<()>> {
     let thread = {
@@ -167,6 +182,7 @@ fn set_sticky(conn: DataDB, user: User, id: i32, state: bool) -> RocketResult<Js
     Ok(Json(()))
 }
 
+/// Delete a `Thread`.
 #[inline]
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, user: User, id: i32) -> RocketResult<Status> {

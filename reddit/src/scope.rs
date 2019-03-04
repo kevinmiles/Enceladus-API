@@ -1,5 +1,8 @@
 use std::fmt::{self, Display, Formatter};
 
+/// All possible scopes that can be requested from a user when authenticating.
+///
+/// Descriptions are from Reddit.
 pub enum Scope {
     /// Update preferences and related account information.
     /// Will not have access to your email or password.
@@ -91,6 +94,8 @@ pub enum Scope {
 }
 
 impl Display for Scope {
+    /// Convert our internal representation of the `Scope` into
+    /// the string value Reddit is expecting to be passed as a queryparam.
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         use Scope::*;

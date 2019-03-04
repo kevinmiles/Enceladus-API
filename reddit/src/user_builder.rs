@@ -1,6 +1,7 @@
 use crate::{Reddit, User};
 use std::time::SystemTime;
 
+/// An implementation of the builder pattern for the `User` struct.
 pub struct UserBuilder<'a> {
     reddit_instance: Option<&'a Reddit<'a>>,
     refresh_token:   Option<String>,
@@ -9,8 +10,10 @@ pub struct UserBuilder<'a> {
 }
 
 // This is explicitly _not_ an implementation of `std::default::Default`,
-// as trait objects cannot currently be `const fn`.
+// as trait methods cannot currently be `const fn`.
 impl UserBuilder<'_> {
+    /// The default `UserBuilder`.
+    /// All fields are `None`.
     #[inline(always)]
     pub const fn default() -> Self {
         UserBuilder {
@@ -23,7 +26,9 @@ impl UserBuilder<'_> {
 }
 
 impl<'a> UserBuilder<'a> {
-    // FIXME make this `const fn` when `.unwrap()` or similar becomes `const fn`.
+    /// Convert the builder into `User`.
+    /// Returns `Some` if there were no issues,
+    /// `None` if some field could not be converted.
     #[inline]
     pub fn build(self) -> Option<User<'a>> {
         Some(User {
@@ -34,26 +39,28 @@ impl<'a> UserBuilder<'a> {
         })
     }
 
+    /// Set the parent instance of `Reddit`.
     #[inline(always)]
     pub const fn with_reddit_instance(mut self, reddit_instance: &'a Reddit<'a>) -> Self {
         self.reddit_instance = Some(reddit_instance);
         self
     }
 
-    // FIXME make this `const fn` when `Option<String>` is allowed
+    /// Set the user's refresh token.
     #[inline(always)]
     pub fn with_refresh_token(mut self, refresh_token: String) -> Self {
         self.refresh_token = Some(refresh_token);
         self
     }
 
-    // FIXME make this `const fn` when `Option<String>` is allowed
+    /// Set the user's access token.
     #[inline(always)]
     pub fn with_access_token(mut self, access_token: String) -> Self {
         self.access_token = Some(access_token);
         self
     }
 
+    /// Set when the user's access token expires.
     #[inline(always)]
     pub const fn with_expires_at(mut self, expires_at: SystemTime) -> Self {
         self.expires_at = Some(expires_at);

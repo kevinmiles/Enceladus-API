@@ -39,12 +39,14 @@ generate_structs! {
     }
 }
 
+/// Only these fields may be externally present when setting a section's lock.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalLockSection {
     pub lock_held_by_user_id: Option<i32>,
 }
 
+/// Only these fields may be internally present when setting a section's lock.
 #[derive(AsChangeset)]
 #[table_name = "section"]
 pub struct LockSection {
@@ -92,7 +94,7 @@ impl Section {
             conn,
             data.in_thread_id,
             &UpdateThread {
-                sections_id: Some(thread.sections_id),
+                sections_id: thread.sections_id.into(),
                 ..Default::default()
             },
         )?;
@@ -138,7 +140,7 @@ impl Section {
             conn,
             thread.id,
             &UpdateThread {
-                sections_id: Some(thread.sections_id),
+                sections_id: thread.sections_id.into(),
                 ..Default::default()
             },
         )?;
@@ -151,6 +153,9 @@ impl Section {
 }
 
 impl ToMarkdown for Section {
+    /// Convert the `Section` object to valid markdown.
+    /// The resulting string is intended for consumption by Reddit,
+    /// but should be valid for any markdown flavor supporting tables.
     #[inline]
     fn to_markdown(&self, conn: &Database) -> Result<String, Box<dyn Error>> {
         let mut md = String::new();

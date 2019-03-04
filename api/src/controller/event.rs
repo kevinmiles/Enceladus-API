@@ -77,7 +77,7 @@ impl Event {
             conn,
             data.in_thread_id,
             &UpdateThread {
-                events_id: Some(thread.events_id),
+                events_id: thread.events_id.into(),
                 ..Default::default()
             },
         )?;
@@ -113,7 +113,7 @@ impl Event {
             conn,
             thread.id,
             &UpdateThread {
-                events_id: Some(thread.events_id),
+                events_id: thread.events_id.into(),
                 ..Default::default()
             },
         )?;
@@ -124,6 +124,11 @@ impl Event {
 }
 
 impl ToMarkdown for Event {
+    /// Convert the `Event` object to valid markdown.
+    /// The resulting string is intended for consumption by Reddit,
+    /// but should be valid for any markdown flavor supporting tables.
+    ///
+    /// The designated UTC column (if any) will be formatted as `HH:MM`.
     #[inline]
     fn to_markdown(&self, conn: &Database) -> Result<String, Box<dyn Error>> {
         if !self.posted {

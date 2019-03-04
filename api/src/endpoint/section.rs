@@ -16,6 +16,7 @@ use rocket_contrib::json::Json;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// How long are section locks able to be held for, guaranteed?
+///
 /// Currently 10 minutes,
 /// although this is an implementation detail and should not be relied upon.
 const LOCK_DURATION_SECONDS: i64 = 10 * 60;
@@ -23,6 +24,7 @@ const LOCK_DURATION_SECONDS: i64 = 10 * 60;
 generic_all!(Section);
 generic_get!(Section);
 
+/// Create a `Section`.
 #[inline]
 #[post("/", data = "<data>")]
 pub fn post(
@@ -44,11 +46,11 @@ pub fn post(
     Err(Status::Unauthorized)
 }
 
-// We need to define a type discriminant to allow Rocket to discern between
-// an update on the lock and an update on everything else.
-// Rather than checking the existence of a field,
-// we can rely on Serde to do that for us.
-// As a bonus, it's future proof if we need to add additional fields.
+/// We need to define a type discriminant to allow Rocket to discern between
+/// an update on the lock and an update on everything else.
+/// Rather than checking the existence of a field,
+/// we can rely on Serde to do that for us.
+/// As a bonus, it's future proof if we need to add additional fields.
 #[derive(serde::Deserialize)]
 #[serde(untagged)]
 pub enum UpdateSectionDiscriminant {
@@ -56,8 +58,8 @@ pub enum UpdateSectionDiscriminant {
     UpdateSection(UpdateSection),
 }
 
-// Discriminate between the two types,
-// calling the appropriate method as necessary.
+/// Discriminate between the two types,
+/// calling the appropriate method as necessary.
 #[inline]
 #[patch("/<id>", data = "<data>")]
 pub fn patch(
@@ -73,6 +75,8 @@ pub fn patch(
     }
 }
 
+/// Set the lock on a `Section`,
+/// preventing any other `User`s from updating any fields.
 #[inline]
 fn set_lock(
     conn: DataDB,
@@ -125,6 +129,7 @@ fn set_lock(
     Err(Status::Forbidden)
 }
 
+/// Update any fields aside from the lock.
 #[inline]
 fn update_fields(
     conn: DataDB,
@@ -150,6 +155,7 @@ fn update_fields(
     }
 }
 
+/// Delete a `Section` and any references to its ID.
 #[inline]
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, user: User, id: i32) -> RocketResult<Status> {
