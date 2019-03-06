@@ -2,20 +2,17 @@ use hashbrown::HashMap;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 use serde_json::{json, Value as Json};
-use std::{
-    collections::LinkedList,
-    sync::{Arc, Weak},
-};
+use std::sync::{Arc, Weak};
 use ws::{CloseCode, Handler, Handshake, Message, Result, Sender};
 
 mod structs;
 use structs::*;
 
 lazy_static! {
-    // FIXME Change this `LinkedList` to a `HashSet` or `BTreeSet`
+    // FIXME Change this `Vec` to a `HashSet` or `BTreeSet`
     // as soon as upstream changes allow.
     // The current implementation makes removing an entry quite expensive.
-    static ref ROOMS: RwLock<HashMap<Room, LinkedList<Weak<Sender>>>> = RwLock::new(HashMap::new());
+    static ref ROOMS: RwLock<HashMap<Room, Vec<Weak<Sender>>>> = RwLock::new(HashMap::new());
 }
 
 #[cfg(debug_assertions)]
@@ -26,7 +23,7 @@ const PORT: u16 = 3001;
 
 struct Socket {
     out:   Arc<Sender>,
-    rooms: Vec<Room>,
+    rooms: HashMap<Room, usize>,
 }
 
 impl Handler for Socket {
@@ -43,28 +40,37 @@ impl Handler for Socket {
 
         let mut rooms = ROOMS.write();
 
-        let _ = match serde_json::from_str(&message) {
-            Ok(JoinRequest { joins }) => joins,
+        for room in match serde_json::from_str(&message) {
+            Ok(JoinRequest { join }) => join,
             _ => return Ok(()),
         }
         .into_iter()
         .filter_map(Room::from_string)
-        .map(|room: Room| {
+        {
             let room_set = match rooms.get_mut(&room) {
                 Some(s) => s,
                 None => {
-                    rooms.insert(room.clone(), LinkedList::new());
+                    rooms.insert(room.clone(), vec![]);
                     rooms.get_mut(&room).unwrap()
                 }
             };
-            room_set.push_back(Arc::downgrade(&self.out));
-            self.rooms.push(room);
-        });
+            room_set.push(Arc::downgrade(&self.out));
+            self.rooms.insert(room, room_set.len() - 1);
+        }
 
         self.out.close(CloseCode::Normal)
     }
 
     fn on_close(&mut self, _code: CloseCode, _reason: &str) {
+        // Avoid locking the map if we don't need to.
+        if !self.rooms.is_empty() {
+            let mut rooms = ROOMS.write();
+
+            for (room, &index) in self.rooms.iter() {
+                rooms.get_mut(room).unwrap().remove(index);
+            }
+        }
+
         println!("client has disconnected");
     }
 }
@@ -101,7 +107,7 @@ pub fn spawn() {
     let addr = format!("{}:{}", IP, PORT);
     ws::listen(addr, |out| Socket {
         out:   Arc::new(out),
-        rooms: vec![],
+        rooms: HashMap::new(),
     })
     .unwrap();
 }

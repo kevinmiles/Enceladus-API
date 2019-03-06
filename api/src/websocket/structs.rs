@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Deserialize, Debug)]
 pub struct JoinRequest {
-    pub joins: Vec<String>,
+    pub join: Vec<String>,
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
