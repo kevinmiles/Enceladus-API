@@ -1,9 +1,8 @@
 use hashbrown::HashMap;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
-use serde_json::{json, Value as Json};
 use std::sync::{Arc, Weak};
-use ws::{CloseCode, Handler, Handshake, Message, Result, Sender};
+use ws::{CloseCode, Handler, Handshake, Message as WsMessage, Result, Sender};
 
 mod structs;
 use structs::*;
@@ -32,9 +31,9 @@ impl Handler for Socket {
         Ok(())
     }
 
-    fn on_message(&mut self, message: Message) -> Result<()> {
+    fn on_message(&mut self, message: WsMessage) -> Result<()> {
         let message = match message {
-            Message::Text(s) => s,
+            WsMessage::Text(s) => s,
             _ => return Ok(()),
         };
 
@@ -45,7 +44,7 @@ impl Handler for Socket {
             _ => return Ok(()),
         }
         .into_iter()
-        .filter_map(Room::from_string)
+        .filter_map(|s| s.parse().ok())
         {
             let room_set = match rooms.get_mut(&room) {
                 Some(s) => s,
@@ -58,7 +57,7 @@ impl Handler for Socket {
             self.rooms.insert(room, room_set.len() - 1);
         }
 
-        self.out.close(CloseCode::Normal)
+        Ok(())
     }
 
     fn on_close(&mut self, _code: CloseCode, _reason: &str) {
@@ -73,34 +72,6 @@ impl Handler for Socket {
 
         println!("client has disconnected");
     }
-}
-
-#[allow(dead_code)]
-pub fn send_message_to_room(
-    room: &Room,
-    action: &Action,
-    data_type: &DataType,
-    message: &Json,
-) -> Result<()> {
-    let rooms = ROOMS.read();
-    let clients = match rooms.get(room) {
-        Some(v) => v,
-        None => return Ok(()),
-    };
-
-    let message = &*json!({
-        "room": room,
-        "action": action,
-        "data_type": data_type,
-        "data": message,
-    })
-    .to_string();
-
-    let _ = clients.iter().filter_map(Weak::upgrade).inspect(|client| {
-        let _ = client.send(message);
-    });
-
-    Ok(())
 }
 
 pub fn spawn() {
