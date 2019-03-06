@@ -14,6 +14,7 @@ mod encryption;
 mod endpoint;
 mod fairing;
 mod schema;
+mod websocket;
 
 #[cfg(test)]
 mod tests;
@@ -89,5 +90,12 @@ pub fn server() -> Rocket {
 /// Uses the port number defined in the environment variable `ROCKET_PORT`.
 /// If not defined, defaults to `8000`.
 fn main() {
+    std::thread::Builder::new()
+        .name("websocket_server".into())
+        .spawn(|| {
+            websocket::spawn();
+        })
+        .unwrap();
+
     server().launch();
 }
