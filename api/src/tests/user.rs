@@ -3,7 +3,7 @@ use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/user";
 
-fn create_user(client: &mut Client) -> Json {
+fn create_user(client: &mut Client<'_>) -> Json {
     client
         .with_base(BASE)
         .post(

@@ -3,7 +3,7 @@ use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/event";
 
-fn create_event(client: &mut Client, token: &str, thread_id: i32) -> Json {
+fn create_event(client: &mut Client<'_>, token: &str, thread_id: i32) -> Json {
     client
         .with_base(BASE)
         .post(

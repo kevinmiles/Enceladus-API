@@ -230,7 +230,7 @@ impl User {
     pub fn update_access_token_if_necessary(
         conn: &Database,
         user_id: i32,
-        reddit_user: &mut reddit::User,
+        reddit_user: &mut reddit::User<'_>,
     ) -> QueryResult<Self> {
         let db_user = Self::find_id(conn, user_id)?;
         let current_expires_at = db_user.access_token_expires_at_utc;

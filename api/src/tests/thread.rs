@@ -3,7 +3,7 @@ use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/thread";
 
-fn create_thread(client: &mut Client, token: &str) -> Json {
+fn create_thread(client: &mut Client<'_>, token: &str) -> Json {
     client
         .with_base(BASE)
         .post(

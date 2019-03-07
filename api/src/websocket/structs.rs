@@ -16,7 +16,7 @@ pub enum Room {
 
 impl fmt::Display for Room {
     #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Room::*;
         write!(
             f,
@@ -55,7 +55,7 @@ pub enum Action {
 
 impl fmt::Display for Action {
     #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Action::*;
         write!(
             f,
@@ -78,7 +78,7 @@ pub enum DataType {
 
 impl fmt::Display for DataType {
     #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use DataType::*;
         write!(
             f,

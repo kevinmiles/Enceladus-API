@@ -97,7 +97,7 @@ impl Display for Scope {
     /// Convert our internal representation of the `Scope` into
     /// the string value Reddit is expecting to be passed as a queryparam.
     #[inline]
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use Scope::*;
         let value = match self {
             Account => "account",

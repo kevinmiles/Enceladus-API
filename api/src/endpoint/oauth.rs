@@ -51,7 +51,7 @@ lazy_static! {
 #[get("/?<callback>")]
 pub fn oauth(
     conn: DataDB,
-    mut cookies: Cookies,
+    mut cookies: Cookies<'_>,
     callback: &RawStr,
 ) -> Result<Redirect, Box<dyn Error>> {
     let callback = callback.to_string();
@@ -117,7 +117,7 @@ pub fn oauth(
 #[get("/callback?<code>&<state>")]
 pub fn callback(
     conn: DataDB,
-    mut cookies: Cookies,
+    mut cookies: Cookies<'_>,
     code: String,
     state: String,
 ) -> Result<Redirect, Box<dyn Error>> {

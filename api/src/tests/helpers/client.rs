@@ -31,17 +31,17 @@ impl<'a> Client<'a> {
     }
 
     #[inline]
-    pub fn get_all(&self) -> Response {
+    pub fn get_all(&self) -> Response<'_> {
         self.get("")
     }
 
     #[inline]
-    pub fn get(&self, id: impl ToString) -> Response {
+    pub fn get(&self, id: impl ToString) -> Response<'_> {
         Response(self.client.get(self.url_for(id)).dispatch())
     }
 
     #[inline]
-    pub fn post(&self, token: Option<&str>, body: impl ToString) -> Response {
+    pub fn post(&self, token: Option<&str>, body: impl ToString) -> Response<'_> {
         Response(match token {
             Some(token) => self
                 .client
@@ -58,7 +58,7 @@ impl<'a> Client<'a> {
     }
 
     #[inline]
-    pub fn patch(&self, token: Option<&str>, id: impl ToString, body: impl ToString) -> Response {
+    pub fn patch(&self, token: Option<&str>, id: impl ToString, body: impl ToString) -> Response<'_> {
         Response(match token {
             Some(token) => self
                 .client
@@ -75,7 +75,7 @@ impl<'a> Client<'a> {
     }
 
     #[inline]
-    pub fn delete(&self, token: Option<&str>, id: impl ToString) -> Response {
+    pub fn delete(&self, token: Option<&str>, id: impl ToString) -> Response<'_> {
         Response(match token {
             Some(token) => self
                 .client

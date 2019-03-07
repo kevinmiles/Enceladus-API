@@ -3,7 +3,7 @@ use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/user";
 
-fn create_with_body(client: &mut Client, body: Json) -> (i32, String) {
+fn create_with_body(client: &mut Client<'_>, body: Json) -> (i32, String) {
     let response = client
         .with_base(BASE)
         .post(None, body)
@@ -16,7 +16,7 @@ fn create_with_body(client: &mut Client, body: Json) -> (i32, String) {
     )
 }
 
-pub fn create(client: &mut Client) -> (i32, String) {
+pub fn create(client: &mut Client<'_>) -> (i32, String) {
     create_with_body(
         client,
         json!({
@@ -28,6 +28,6 @@ pub fn create(client: &mut Client) -> (i32, String) {
     )
 }
 
-pub fn delete(client: &mut Client, id: i32) {
+pub fn delete(client: &mut Client<'_>, id: i32) {
     client.with_base(BASE).delete(None, id);
 }

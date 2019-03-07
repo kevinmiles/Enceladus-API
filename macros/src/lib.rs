@@ -1,5 +1,5 @@
 #![feature(proc_macro_hygiene, decl_macro, crate_visibility_modifier)]
-#![deny(clippy::all)]
+#![deny(rust_2018_idioms, clippy::all)]
 #![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.
 #![allow(
     intra_doc_link_resolution_failure,
@@ -53,7 +53,7 @@ struct Declaration {
 
 impl Parse for Declaration {
     /// Parse a full declaration of a `struct` & its associated fields.
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
         let paren_content;
         let brace_content;
 
@@ -78,7 +78,7 @@ struct Field {
 
 impl Parse for Field {
     /// Parse a field, likely within a full `Declaration`.
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
         Ok(Field {
             attribute: if input.peek(kw::auto)
                 || input.peek(kw::readonly)

@@ -3,7 +3,7 @@ use serde_json::{json, Value as Json};
 
 const BASE: &str = "/v1/section";
 
-fn create_section(client: &mut Client, token: &str, thread_id: i32) -> Json {
+fn create_section(client: &mut Client<'_>, token: &str, thread_id: i32) -> Json {
     client
         .with_base(BASE)
         .post(Some(token), json!({ "in_thread_id": thread_id }))

@@ -32,7 +32,7 @@ pub fn post(
     let mut post_id = None;
 
     if let Some(subreddit) = subreddit {
-        let mut user: reddit::User = user.into();
+        let mut user: reddit::User<'_> = user.into();
         post_id = Some(
             user.submit_self_post(subreddit, &data.thread_name, None)
                 .expect("error posting to Reddit"),
@@ -118,7 +118,7 @@ pub fn approve(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
         return Err(Status::Unauthorized);
     }
 
-    let mut user: reddit::User = user.into();
+    let mut user: reddit::User<'_> = user.into();
     user.approve(&format!("t3_{}", thread.post_id.unwrap()))
         .expect("error approving thread");
     User::update_access_token_if_necessary(&conn, thread.created_by_user_id, &mut user)
@@ -173,7 +173,7 @@ fn set_sticky(conn: DataDB, user: User, id: i32, state: bool) -> RocketResult<Js
         return Err(Status::Unauthorized);
     }
 
-    let mut user: reddit::User = user.into();
+    let mut user: reddit::User<'_> = user.into();
     user.set_sticky(&format!("t3_{}", thread.post_id.unwrap()), state)
         .expect("error stickying/unstickying thread");
     User::update_access_token_if_necessary(&conn, thread.created_by_user_id, &mut user)

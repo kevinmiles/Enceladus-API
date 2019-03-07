@@ -46,7 +46,7 @@ impl Fairing for FeatureFilter {
     ///
     /// FIXME Is there any valid use case for an "all" feature flag?
     #[inline]
-    fn on_response(&self, request: &Request, response: &mut Response) {
+    fn on_response(&self, request: &Request<'_>, response: &mut Response<'_>) {
         let features: String = request
             .get_query_value("features")
             .unwrap_or_else(|| Ok("".into()))

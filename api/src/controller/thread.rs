@@ -128,7 +128,7 @@ impl Thread {
             return Ok(());
         }
 
-        let mut user: reddit::User = User::find_id(conn, self.created_by_user_id)?.into();
+        let mut user: reddit::User<'_> = User::find_id(conn, self.created_by_user_id)?.into();
 
         user.edit_self_post(
             &format!("t3_{}", self.post_id.clone().unwrap()),

@@ -25,7 +25,7 @@ crate enum Keyword {
 impl Parse for Keyword {
     /// Allow `syn` to call our `parse` method
     /// and receive a `Keyword` back.
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
         if input.peek(kw::auto) {
             input.parse::<kw::auto>()?;
             Ok(Keyword::Auto)

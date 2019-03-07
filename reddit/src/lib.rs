@@ -1,4 +1,4 @@
-#![deny(clippy::all)]
+#![deny(rust_2018_idioms, clippy::all)]
 #![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.
 #![allow(intra_doc_link_resolution_failure, clippy::match_bool)]
 
@@ -174,7 +174,7 @@ impl<'a> Reddit<'a> {
 
     /// Given a code, obtain a refresh token from Reddit.
     #[inline]
-    pub fn obtain_refresh_token(&self, code: &str) -> Result<User, reqwest::Error> {
+    pub fn obtain_refresh_token(&self, code: &str) -> Result<User<'_>, reqwest::Error> {
         #[derive(Deserialize)]
         struct APIReturnType {
             access_token:  String,
