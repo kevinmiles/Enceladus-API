@@ -4,6 +4,7 @@ use super::{Section, ToMarkdown, THREAD_CACHE_SIZE};
 use crate::{
     controller::User,
     schema::thread::{self, dsl::*},
+    websocket::*,
     Database,
 };
 use enceladus_macros::generate_structs;
@@ -11,7 +12,7 @@ use lazy_static::lazy_static;
 use lru_cache::LruCache;
 use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, value::Value as Json};
 use std::{error::Error, fmt::Write};
 
@@ -185,6 +186,15 @@ impl Thread {
             .values(insertable_thread)
             .get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
+
+        let _ = Message {
+            room:      Room::ThreadCreate,
+            action:    Action::Create,
+            data_type: DataType::Thread,
+            data:      &result,
+        }
+        .send();
+
         Ok(result)
     }
 
@@ -198,6 +208,25 @@ impl Thread {
             .set(data)
             .get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
+
+        #[derive(Serialize)]
+        struct EmitUpdateThread<'a> {
+            id: i32,
+            #[serde(flatten)]
+            data: &'a UpdateThread,
+        }
+
+        let _ = Message {
+            room:      Room::Thread(thread_id),
+            action:    Action::Update,
+            data_type: DataType::Thread,
+            data:      &EmitUpdateThread {
+                id: thread_id,
+                data,
+            },
+        }
+        .send();
+
         Ok(result)
     }
 
@@ -207,6 +236,15 @@ impl Thread {
     #[inline]
     pub fn delete(conn: &Database, thread_id: i32) -> QueryResult<usize> {
         CACHE.lock().remove(&thread_id);
+
+        let _ = Message {
+            room:      Room::Thread(thread_id),
+            action:    Action::Delete,
+            data_type: DataType::Thread,
+            data:      &json!({ "id": thread_id }),
+        }
+        .send();
+
         diesel::delete(thread)
             .filter(id.eq(thread_id))
             .execute(conn)

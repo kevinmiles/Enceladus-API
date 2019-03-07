@@ -1,11 +1,15 @@
 use hashbrown::HashMap;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
-use std::sync::{Arc, Weak};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+    Weak,
+};
 use ws::{CloseCode, Handler, Handshake, Message as WsMessage, Result, Sender};
 
 mod structs;
-use structs::*;
+pub use structs::*;
 
 lazy_static! {
     // FIXME Change this `Vec` to a `HashSet` or `BTreeSet`
@@ -13,6 +17,8 @@ lazy_static! {
     // The current implementation makes removing an entry quite expensive.
     static ref ROOMS: RwLock<HashMap<Room, Vec<Weak<Sender>>>> = RwLock::new(HashMap::new());
 }
+
+static CONNECTED_CLIENTS: AtomicUsize = AtomicUsize::new(0);
 
 #[cfg(debug_assertions)]
 const IP: &str = "127.0.0.1";
@@ -27,7 +33,7 @@ struct Socket {
 
 impl Handler for Socket {
     fn on_open(&mut self, _: Handshake) -> Result<()> {
-        println!("client has connected");
+        CONNECTED_CLIENTS.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
 
@@ -70,7 +76,7 @@ impl Handler for Socket {
             }
         }
 
-        println!("client has disconnected");
+        CONNECTED_CLIENTS.fetch_sub(1, Ordering::Relaxed);
     }
 }
 

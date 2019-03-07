@@ -2,7 +2,7 @@
 
 use crate::controller::User;
 
-#[cfg(test)]
+#[cfg(debug_assertions)]
 use {
     crate::{
         controller::{Claim, ExternalInsertUser, ExternalUpdateUser},
@@ -19,7 +19,7 @@ generic_all!(User);
 generic_get!(User);
 
 /// Create a `User`.
-#[cfg(test)]
+#[cfg(debug_assertions)]
 #[inline]
 #[post("/", data = "<data>")]
 pub fn post(
@@ -30,7 +30,7 @@ pub fn post(
 }
 
 /// Update a `User`.
-#[cfg(test)]
+#[cfg(debug_assertions)]
 #[inline]
 #[patch("/<id>", data = "<data>")]
 pub fn patch(conn: DataDB, id: i32, data: Json<ExternalUpdateUser>) -> RocketResult<Json<User>> {
@@ -38,7 +38,7 @@ pub fn patch(conn: DataDB, id: i32, data: Json<ExternalUpdateUser>) -> RocketRes
 }
 
 /// Delete a `User`.
-#[cfg(test)]
+#[cfg(debug_assertions)]
 #[inline]
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, id: i32) -> RocketResult<Status> {
@@ -47,7 +47,7 @@ pub fn delete(conn: DataDB, id: i32) -> RocketResult<Status> {
 
 // There's no need to use this elsewhere,
 // as this struct exists solely to make testing easier.
-#[cfg(test)]
+#[cfg(debug_assertions)]
 #[derive(Serialize)]
 pub struct TokenUser {
     token: String,
@@ -62,7 +62,7 @@ pub struct TokenUser {
 
 // The encoding will never fail given an integer.
 #[allow(clippy::fallible_impl_from)]
-#[cfg(test)]
+#[cfg(debug_assertions)]
 impl From<User> for TokenUser {
     /// Create a `TokenUser`,
     /// which is a `User` that has an additional `token` field containing a JWT.

@@ -5,6 +5,7 @@ use crate::{
     encryption::{decrypt, encrypt},
     endpoint::oauth::REDDIT,
     schema::user::{self, dsl::*},
+    websocket::*,
     DataDB,
     Database,
 };
@@ -18,11 +19,10 @@ use rocket::{
     Outcome,
 };
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
-#[cfg(test)]
-use rocket_contrib::json::Json;
-#[cfg(test)]
-use serde::Deserialize;
+use serde::Serialize;
 use std::time::{Duration, UNIX_EPOCH};
+#[cfg(debug_assertions)]
+use {rocket_contrib::json::Json, serde::Deserialize, serde_json::json};
 
 lazy_static! {
     /// A global cache, containing a mapping of IDs to their respective `Event`.
@@ -59,7 +59,7 @@ generate_structs! {
 /// This struct is necessary to perform the requisite encryption
 /// of the refresh and access tokens.
 /// It is otherwise identical to `UpdateUser`.
-#[cfg(test)]
+#[cfg(debug_assertions)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalUpdateUser {
@@ -73,7 +73,7 @@ pub struct ExternalUpdateUser {
     pub access_token_expires_at_utc: Option<i64>,
 }
 
-#[cfg(test)]
+#[cfg(debug_assertions)]
 impl Into<UpdateUser> for Json<ExternalUpdateUser> {
     /// Convert the `Json<ExternalUpdateUser>` from the endpoint
     /// into an `UpdateUser` for consumption by the controller.
@@ -96,14 +96,14 @@ impl Into<UpdateUser> for Json<ExternalUpdateUser> {
 }
 
 /// Helper function for serde to have a default value when deserializing.
-#[cfg(test)]
+#[cfg(debug_assertions)]
 #[inline(always)]
 fn en() -> String {
     "en".into()
 }
 
 /// Helper function for serde to have a default value when deserializing.
-#[cfg(test)]
+#[cfg(debug_assertions)]
 #[inline(always)]
 const fn falsey() -> bool {
     false
@@ -112,7 +112,7 @@ const fn falsey() -> bool {
 /// This struct is necessary to perform the requisite encryption
 /// of the refresh and access tokens.
 /// It is otherwise identical to `InsertUser`.
-#[cfg(test)]
+#[cfg(debug_assertions)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalInsertUser {
@@ -132,7 +132,7 @@ pub struct ExternalInsertUser {
     pub access_token_expires_at_utc: i64,
 }
 
-#[cfg(test)]
+#[cfg(debug_assertions)]
 impl Into<InsertUser> for Json<ExternalInsertUser> {
     /// Convert the `Json<ExternalInsertUser>` from the endpoint
     /// into an `InsertUser` for consumption by the controller.
@@ -286,6 +286,15 @@ impl User {
     pub fn create(conn: &Database, data: &InsertUser) -> QueryResult<Self> {
         let result: Self = diesel::insert_into(user).values(data).get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
+
+        let _ = Message {
+            room:      Room::User,
+            action:    Action::Create,
+            data_type: DataType::User,
+            data:      &result,
+        }
+        .send();
+
         Ok(result)
     }
 
@@ -293,23 +302,47 @@ impl User {
     ///
     /// The entry is updated in the database, added to cache, and returned.
     #[inline]
-    #[allow(dead_code)]
     pub fn update(conn: &Database, user_id: i32, data: &UpdateUser) -> QueryResult<Self> {
         let result: Self = diesel::update(user)
             .filter(id.eq(user_id))
             .set(data)
             .get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
+
+        #[derive(Serialize)]
+        struct EmitUpdateUser<'a> {
+            id: i32,
+            #[serde(flatten)]
+            data: &'a UpdateUser,
+        }
+
+        let _ = Message {
+            room:      Room::User,
+            action:    Action::Update,
+            data_type: DataType::User,
+            data:      &EmitUpdateUser { id: user_id, data },
+        }
+        .send();
+
         Ok(result)
     }
 
     /// Delete a `User` given its ID.
     ///
     /// Removes the entry from cache and returns the number of rows deleted (should be `1`).
+    #[cfg(debug_assertions)]
     #[inline]
-    #[allow(dead_code)]
     pub fn delete(conn: &Database, user_id: i32) -> QueryResult<usize> {
         CACHE.lock().remove(&user_id);
+
+        let _ = Message {
+            room:      Room::User,
+            action:    Action::Delete,
+            data_type: DataType::User,
+            data:      &json!({ "id": user_id }),
+        }
+        .send();
+
         diesel::delete(user).filter(id.eq(user_id)).execute(conn)
     }
 }

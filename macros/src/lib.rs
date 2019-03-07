@@ -175,7 +175,9 @@ pub fn generate_structs(item: TokenStream) -> TokenStream {
 
         // Add the field to the updateables.
         if updateable {
-            update_fields.push(quote!(pub #name: Option<#typ>));
+            update_fields.push(
+                quote!(#[serde(skip_serializing_if="Option::is_none")] pub #name: Option<#typ>),
+            );
         }
 
         // Create the function containing our default value.
@@ -212,7 +214,12 @@ pub fn generate_structs(item: TokenStream) -> TokenStream {
             #(#insert_fields),*
         }
 
-        #[derive(Default, serde::Deserialize, rocket_contrib::databases::diesel::AsChangeset)]
+        #[derive(
+            Default,
+            serde::Serialize,
+            serde::Deserialize,
+            rocket_contrib::databases::diesel::AsChangeset,
+        )]
         #[table_name = #table]
         #[serde(deny_unknown_fields)]
         pub struct #update_name {

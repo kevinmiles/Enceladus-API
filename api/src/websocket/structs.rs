@@ -1,5 +1,5 @@
-use serde::Deserialize;
-use serde_json::{json, Value as Json};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::{fmt, sync::Weak};
 
 #[derive(Deserialize, Debug)]
@@ -93,14 +93,14 @@ impl fmt::Display for DataType {
     }
 }
 
-pub struct Message {
+pub struct Message<'a, T: Serialize> {
     pub room:      Room,
     pub action:    Action,
     pub data_type: DataType,
-    pub data:      Json,
+    pub data:      &'a T,
 }
 
-impl Message {
+impl<T: Serialize> Message<'_, T> {
     #[inline]
     pub fn send(&self) -> ws::Result<()> {
         let rooms = super::ROOMS.read();

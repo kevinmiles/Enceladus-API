@@ -63,9 +63,9 @@ pub fn server() -> Rocket {
         .mount("/oauth", routes![oauth::oauth, oauth::callback])
         .mount(
             "/v1/user",
-            #[cfg(test)]
+            #[cfg(debug_assertions)]
             all_routes!(user),
-            #[cfg(not(test))]
+            #[cfg(not(debug_assertions))]
             routes![user::all, user::get],
         )
         .mount(
