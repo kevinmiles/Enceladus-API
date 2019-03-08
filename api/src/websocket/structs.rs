@@ -2,11 +2,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{fmt, sync::Weak};
 
+/// A request from a client to join certain rooms.
+/// Each element should be able to be parsed with `Room::from_str`.
 #[derive(Deserialize, Debug)]
 pub struct JoinRequest {
     pub join: Vec<String>,
 }
 
+/// Room to send a `Message` to.
 #[derive(Debug, Hash, PartialEq, Eq, Clone)]
 pub enum Room {
     User,
@@ -47,6 +50,7 @@ impl std::str::FromStr for Room {
     }
 }
 
+/// What action is the `data` field representing in a `Message`?
 pub enum Action {
     Create,
     Update,
@@ -69,6 +73,7 @@ impl fmt::Display for Action {
     }
 }
 
+/// What type is the `data` field in a `Message`?
 pub enum DataType {
     Event,
     Section,
@@ -93,6 +98,9 @@ impl fmt::Display for DataType {
     }
 }
 
+/// A message that can be emitted to the various WebSocket clients.
+/// Any serializable type can be sent as `data`,
+/// though it should match the indicated `data_type`.
 pub struct Message<'a, T: Serialize> {
     pub room:      Room,
     pub action:    Action,
@@ -125,6 +133,8 @@ impl<T: Serialize> Message<'_, T> {
     }
 }
 
+/// Use this struct to add an `id` field to a preexisting struct.
+/// The fields will be flattened by serde.
 #[derive(Serialize)]
 pub struct Update<'a, T: Serialize> {
     pub id: i32,

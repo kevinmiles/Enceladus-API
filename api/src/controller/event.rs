@@ -1,10 +1,11 @@
 use super::{Thread, ToMarkdown, UpdateThread, EVENT_CACHE_SIZE};
-use crate::{schema::event, Database};
+use crate::{schema::event, websocket::*, Database};
 use enceladus_macros::generate_structs;
 use lazy_static::lazy_static;
 use lru_cache::LruCache;
 use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
+use serde_json::json;
 use std::{error::Error, fmt::Write};
 
 lazy_static! {
@@ -70,6 +71,14 @@ impl Event {
         let result: Self = diesel::insert_into(event).values(data).get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
 
+        let _ = Message {
+            room:      Room::Thread(result.in_thread_id),
+            action:    Action::Create,
+            data_type: DataType::Event,
+            data:      &result,
+        }
+        .send();
+
         // Add the event ID to the relevant Thread.
         let mut thread = Thread::find_id(conn, data.in_thread_id)?;
         thread.events_id.push(result.id);
@@ -97,6 +106,15 @@ impl Event {
             .set(data)
             .get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
+
+        let _ = Message {
+            room:      Room::Thread(result.in_thread_id),
+            action:    Action::Update,
+            data_type: DataType::Event,
+            data:      &Update::new(event_id, data),
+        }
+        .send();
+
         Ok(result)
     }
 
@@ -117,6 +135,14 @@ impl Event {
                 ..Default::default()
             },
         )?;
+
+        let _ = Message {
+            room:      Room::Thread(thread.id),
+            action:    Action::Delete,
+            data_type: DataType::Event,
+            data:      &json!({ "id": event_id }),
+        }
+        .send();
 
         CACHE.lock().remove(&event_id);
         diesel::delete(event).filter(id.eq(event_id)).execute(conn)
