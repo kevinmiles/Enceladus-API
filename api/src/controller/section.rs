@@ -5,13 +5,14 @@ use crate::{
     Database,
 };
 use enceladus_macros::generate_structs;
+use itertools::Itertools;
 use lazy_static::lazy_static;
 use lru_cache::LruCache;
 use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{error::Error, fmt::Write};
+use std::{error::Error, fmt::Write, iter::repeat};
 
 lazy_static! {
     /// A global cache, containing a mapping of IDs to their respective `Event`.
@@ -199,12 +200,18 @@ impl ToMarkdown for Section {
         writeln!(&mut md, "# {}", self.name)?;
 
         if self.is_events_section {
-            writeln!(&mut md, "|UTC|Countdown|Update|")?;
-            writeln!(&mut md, "|---|---|---|")?;
+            let thread = Thread::find_id(conn, self.in_thread_id)?;
 
-            let events = Thread::find_id(conn, self.in_thread_id)?.events_id;
+            writeln!(&mut md, "|{}|", thread.event_column_headers.join("|"))?;
+            writeln!(
+                &mut md,
+                "|{}|",
+                repeat("---")
+                    .take(thread.event_column_headers.len())
+                    .join("|")
+            )?;
 
-            for &event_id in events.iter() {
+            for &event_id in thread.events_id.iter() {
                 write!(
                     &mut md,
                     "{}",

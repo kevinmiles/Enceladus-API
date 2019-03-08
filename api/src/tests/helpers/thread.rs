@@ -13,7 +13,7 @@ pub fn create(client: &mut Client<'_>, token: impl ToString) -> i32 {
             json!({
                 "thread_name": guid(),
                 "display_name": guid(),
-                "event_column_headers": ["UTC", "Countdown", "Message"],
+                "event_column_headers": ["UTC", "Countdown", "Update"],
                 "space__utc_col_index": 0,
             }),
         )
