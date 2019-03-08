@@ -19,7 +19,6 @@ use rocket::{
     Outcome,
 };
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
-use serde::Serialize;
 use std::time::{Duration, UNIX_EPOCH};
 #[cfg(debug_assertions)]
 use {rocket_contrib::json::Json, serde::Deserialize, serde_json::json};
@@ -309,18 +308,11 @@ impl User {
             .get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
 
-        #[derive(Serialize)]
-        struct EmitUpdateUser<'a> {
-            id: i32,
-            #[serde(flatten)]
-            data: &'a UpdateUser,
-        }
-
         let _ = Message {
             room:      Room::User,
             action:    Action::Update,
             data_type: DataType::User,
-            data:      &EmitUpdateUser { id: user_id, data },
+            data:      &Update::new(user_id, data),
         }
         .send();
 

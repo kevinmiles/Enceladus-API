@@ -58,7 +58,12 @@ impl<'a> Client<'a> {
     }
 
     #[inline]
-    pub fn patch(&self, token: Option<&str>, id: impl ToString, body: impl ToString) -> Response<'_> {
+    pub fn patch(
+        &self,
+        token: Option<&str>,
+        id: impl ToString,
+        body: impl ToString,
+    ) -> Response<'_> {
         Response(match token {
             Some(token) => self
                 .client

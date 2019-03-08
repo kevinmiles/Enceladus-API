@@ -12,7 +12,7 @@ use lazy_static::lazy_static;
 use lru_cache::LruCache;
 use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{json, value::Value as Json};
 use std::{error::Error, fmt::Write};
 
@@ -209,21 +209,11 @@ impl Thread {
             .get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
 
-        #[derive(Serialize)]
-        struct EmitUpdateThread<'a> {
-            id: i32,
-            #[serde(flatten)]
-            data: &'a UpdateThread,
-        }
-
         let _ = Message {
             room:      Room::Thread(thread_id),
             action:    Action::Update,
             data_type: DataType::Thread,
-            data:      &EmitUpdateThread {
-                id: thread_id,
-                data,
-            },
+            data:      &Update::new(thread_id, data),
         }
         .send();
 

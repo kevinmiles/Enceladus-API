@@ -124,3 +124,17 @@ impl<T: Serialize> Message<'_, T> {
         Ok(())
     }
 }
+
+#[derive(Serialize)]
+pub struct Update<'a, T: Serialize> {
+    pub id: i32,
+    #[serde(flatten)]
+    pub data: &'a T,
+}
+
+impl<'a, T: Serialize> Update<'a, T> {
+    #[inline(always)]
+    pub fn new(id: i32, data: &'a T) -> Self {
+        Self { id, data }
+    }
+}

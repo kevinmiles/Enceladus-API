@@ -1,6 +1,7 @@
 use super::{Event, Thread, ToMarkdown, UpdateThread, SECTION_CACHE_SIZE};
 use crate::{
     schema::section::{self, dsl::*},
+    websocket::*,
     Database,
 };
 use enceladus_macros::generate_structs;
@@ -8,7 +9,8 @@ use lazy_static::lazy_static;
 use lru_cache::LruCache;
 use parking_lot::Mutex;
 use rocket_contrib::databases::diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::{error::Error, fmt::Write};
 
 lazy_static! {
@@ -47,7 +49,7 @@ pub struct ExternalLockSection {
 }
 
 /// Only these fields may be internally present when setting a section's lock.
-#[derive(AsChangeset)]
+#[derive(Serialize, AsChangeset)]
 #[table_name = "section"]
 pub struct LockSection {
     pub lock_held_by_user_id: Option<i32>,
@@ -87,6 +89,14 @@ impl Section {
         let result: Self = diesel::insert_into(section).values(data).get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
 
+        let _ = Message {
+            room:      Room::Thread(result.in_thread_id),
+            action:    Action::Create,
+            data_type: DataType::Section,
+            data:      &result,
+        }
+        .send();
+
         // Add the section ID to the relevant Thread.
         let mut thread = Thread::find_id(conn, data.in_thread_id)?;
         thread.sections_id.push(result.id);
@@ -112,6 +122,15 @@ impl Section {
             .set(data)
             .get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
+
+        let _ = Message {
+            room:      Room::Thread(result.in_thread_id),
+            action:    Action::Update,
+            data_type: DataType::Section,
+            data:      &Update::new(section_id, data),
+        }
+        .send();
+
         Ok(result)
     }
 
@@ -126,6 +145,15 @@ impl Section {
             .set(data)
             .get_result(conn)?;
         CACHE.lock().insert(result.id, result.clone());
+
+        let _ = Message {
+            room:      Room::Thread(result.in_thread_id),
+            action:    Action::Update,
+            data_type: DataType::Section,
+            data:      &Update::new(section_id, data),
+        }
+        .send();
+
         Ok(result)
     }
 
@@ -144,6 +172,14 @@ impl Section {
                 ..Default::default()
             },
         )?;
+
+        let _ = Message {
+            room:      Room::Thread(thread.id),
+            action:    Action::Delete,
+            data_type: DataType::Section,
+            data:      &json!({ "id": section_id }),
+        }
+        .send();
 
         CACHE.lock().remove(&section_id);
         diesel::delete(section)
