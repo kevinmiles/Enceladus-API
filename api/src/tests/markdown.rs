@@ -105,58 +105,34 @@ fn section_events() -> Result<(), Box<dyn Error>> {
         .as_i64()
         .unwrap() as i32;
 
-    let mut events_id = vec![];
-
-    events_id.push(
+    let events_id: Vec<_> = vec![
+        json!({
+            "posted": true,
+            "cols": [1_546_305_060, "T+0:00", "foo"],
+            "in_thread_id": thread_id,
+        }),
+        json!({
+            "posted": false,
+            "cols": [1_546_305_090, "T+0:30", "bar"],
+            "in_thread_id": thread_id,
+        }),
+        json!({
+            "posted": true,
+            "cols": [1_546_305_120, "T+1:00", "baz"],
+            "in_thread_id": thread_id,
+        }),
+    ]
+    .iter()
+    .map(|event| {
         client
             .with_base("/v1/event")
-            .post(
-                Some(&user_token),
-                json!({
-                    "posted": true,
-                    "cols": [1_546_305_060, "T+0:00", "foo"],
-                    "in_thread_id": thread_id,
-                }),
-            )
+            .post(Some(&user_token), event)
             .assert_created()
             .get_body_object()["id"]
             .as_i64()
-            .unwrap() as i32,
-    );
-
-    events_id.push(
-        client
-            .with_base("/v1/event")
-            .post(
-                Some(&user_token),
-                json!({
-                    "posted": false,
-                    "cols": [1_546_305_090, "T+0:30", "bar"],
-                    "in_thread_id": thread_id,
-                }),
-            )
-            .assert_created()
-            .get_body_object()["id"]
-            .as_i64()
-            .unwrap() as i32,
-    );
-
-    events_id.push(
-        client
-            .with_base("/v1/event")
-            .post(
-                Some(&user_token),
-                json!({
-                    "posted": true,
-                    "cols": [1_546_305_120, "T+1:00", "baz"],
-                    "in_thread_id": thread_id,
-                }),
-            )
-            .assert_created()
-            .get_body_object()["id"]
-            .as_i64()
-            .unwrap() as i32,
-    );
+            .unwrap() as i32
+    })
+    .collect();
 
     let conn = crate::DataDB::get_one(&crate::server()).unwrap();
 
@@ -197,114 +173,66 @@ fn thread() -> Result<(), Box<dyn Error>> {
     let (user_id, user_token) = user::create(&mut client);
     let thread_id = thread::create(&mut client, &user_token);
 
-    let mut sections_id = vec![];
-
-    sections_id.push(
+    let sections_id: Vec<_> = vec![
+        json!({
+            "in_thread_id": thread_id,
+            "name": "Introduction",
+            "content": "Sed consectetur nunc molestie eros.",
+            "is_events_section": false,
+        }),
+        json!({
+            "in_thread_id": thread_id,
+            "name": "Live Updates",
+            "content": "",
+            "is_events_section": true,
+        }),
+        json!({
+            "in_thread_id": thread_id,
+            "name": "Participate!",
+            "content": "Fusce volutpat nisl a metus.",
+            "is_events_section": false,
+        }),
+    ]
+    .iter()
+    .map(|section| {
         client
             .with_base("/v1/section")
-            .post(
-                Some(&user_token),
-                json!({
-                    "in_thread_id": thread_id,
-                    "name": "Introduction",
-                    "content": "Sed consectetur nunc molestie eros.",
-                    "is_events_section": false,
-                }),
-            )
+            .post(Some(&user_token), section)
             .assert_created()
             .get_body_object()["id"]
             .as_i64()
-            .unwrap() as i32,
-    );
+            .unwrap() as i32
+    })
+    .collect();
 
-    sections_id.push(
-        client
-            .with_base("/v1/section")
-            .post(
-                Some(&user_token),
-                json!({
-                    "in_thread_id": thread_id,
-                    "name": "Live Updates",
-                    "content": "",
-                    "is_events_section": true,
-                }),
-            )
-            .assert_created()
-            .get_body_object()["id"]
-            .as_i64()
-            .unwrap() as i32,
-    );
-
-    sections_id.push(
-        client
-            .with_base("/v1/section")
-            .post(
-                Some(&user_token),
-                json!({
-                    "in_thread_id": thread_id,
-                    "name": "Participate!",
-                    "content": "Fusce volutpat nisl a metus.",
-                    "is_events_section": false,
-                }),
-            )
-            .assert_created()
-            .get_body_object()["id"]
-            .as_i64()
-            .unwrap() as i32,
-    );
-
-    let mut events_id = vec![];
-
-    events_id.push(
+    let events_id: Vec<_> = vec![
+        json!({
+            "posted": true,
+            "cols": [1_546_305_060, "T+0:00", "foo"],
+            "in_thread_id": thread_id,
+        }),
+        json!({
+            "posted": false,
+            "cols": [1_546_305_090, "T+0:30", "bar"],
+            "in_thread_id": thread_id,
+        }),
+        json!({
+            "posted": true,
+            "cols": [1_546_305_120, "T+1:00", "baz"],
+            "in_thread_id": thread_id,
+        }),
+    ]
+    .iter()
+    .map(|event| {
         client
             .with_base("/v1/event")
-            .post(
-                Some(&user_token),
-                json!({
-                    "posted": true,
-                    "cols": [1_546_305_060, "T+0:00", "foo"],
-                    "in_thread_id": thread_id,
-                }),
-            )
+            .post(Some(&user_token), event)
             .assert_created()
             .get_body_object()["id"]
             .as_i64()
-            .unwrap() as i32,
-    );
-
-    events_id.push(
-        client
-            .with_base("/v1/event")
-            .post(
-                Some(&user_token),
-                json!({
-                    "posted": false,
-                    "cols": [1_546_305_090, "T+0:30", "bar"],
-                    "in_thread_id": thread_id,
-                }),
-            )
-            .assert_created()
-            .get_body_object()["id"]
-            .as_i64()
-            .unwrap() as i32,
-    );
-
-    events_id.push(
-        client
-            .with_base("/v1/event")
-            .post(
-                Some(&user_token),
-                json!({
-                    "posted": true,
-                    "cols": [1_546_305_120, "T+1:00", "baz"],
-                    "in_thread_id": thread_id,
-                }),
-            )
-            .assert_created()
-            .get_body_object()["id"]
-            .as_i64()
-            .unwrap() as i32,
-    );
+            .unwrap() as i32
+    })
+    .collect();
 
     let conn = crate::DataDB::get_one(&crate::server()).unwrap();
 
