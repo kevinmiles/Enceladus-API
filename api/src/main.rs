@@ -24,6 +24,7 @@ use endpoint::*;
 use fairing::*;
 use rocket::{routes, Rocket};
 use rocket_contrib::{database, helmet::SpaceHelmet};
+use rocket_cors::Cors;
 
 /// Single point to change if we need to alter the DBMS.
 pub type Database = diesel::PgConnection;
@@ -57,6 +58,7 @@ pub fn server() -> Rocket {
 
     rocket::ignite()
         .attach(SpaceHelmet::default())
+        .attach(Cors::default())
         .attach(DataDB::fairing())
         .attach(FeatureFilter::fairing())
         .mount("/meta", routes![meta::meta])
