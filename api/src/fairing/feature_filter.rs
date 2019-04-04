@@ -20,16 +20,10 @@ use std::io::Cursor;
 ///
 /// Usage:
 /// ```rust
-/// rocket::ignite.attach(FeatureFilter::fairing()).launch()
+/// rocket::ignite.attach(FeatureFilter::default()).launch()
 /// ```
+#[derive(Default)]
 pub struct FeatureFilter;
-
-impl FeatureFilter {
-    #[inline(always)]
-    pub const fn fairing() -> FeatureFilter {
-        FeatureFilter {}
-    }
-}
 
 impl Fairing for FeatureFilter {
     /// Give Rocket some information about the fairing, including when to call it.

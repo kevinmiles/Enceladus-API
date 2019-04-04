@@ -60,7 +60,9 @@ pub fn server() -> Rocket {
         .attach(SpaceHelmet::default())
         .attach(Cors::default())
         .attach(DataDB::fairing())
-        .attach(FeatureFilter::fairing())
+        .attach(FeatureFilter::default())
+        .manage(Cors::default())
+        .mount("/", rocket_cors::catch_all_options_routes())
         .mount("/meta", routes![meta::meta])
         .mount("/oauth", routes![oauth::oauth, oauth::callback])
         .mount(
