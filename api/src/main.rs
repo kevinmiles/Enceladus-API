@@ -31,12 +31,6 @@ pub type Database = diesel::PgConnection;
 #[database("data")]
 pub struct DataDB(Database);
 
-macro_rules! all_routes {
-    ($ns:ident) => {
-        routes![$ns::all, $ns::get, $ns::post, $ns::patch, $ns::delete]
-    };
-}
-
 /// Returns a globally unique identifier.
 /// Specifically, v4, which is not based on any input factors.
 #[inline]
@@ -68,7 +62,7 @@ pub fn server() -> Rocket {
         .mount(
             "/v1/user",
             #[cfg(debug_assertions)]
-            all_routes!(user),
+            routes![user::all, user::get, user::post, user::patch, user::delete],
             #[cfg(not(debug_assertions))]
             routes![user::all, user::get],
         )
@@ -86,8 +80,26 @@ pub fn server() -> Rocket {
                 thread::delete,
             ],
         )
-        .mount("/v1/section", all_routes!(section))
-        .mount("/v1/event", all_routes!(event))
+        .mount(
+            "/v1/section",
+            routes![
+                section::all,
+                section::get,
+                section::post,
+                section::patch,
+                section::delete,
+            ],
+        )
+        .mount(
+            "/v1/event",
+            routes![
+                event::all,
+                event::get,
+                event::post,
+                event::patch,
+                event::delete,
+            ],
+        )
 }
 
 /// Launch the server.
