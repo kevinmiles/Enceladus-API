@@ -1,3 +1,4 @@
+use enum_display::Display;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{fmt, sync::Weak};
@@ -51,51 +52,27 @@ impl std::str::FromStr for Room {
 }
 
 /// What action is the `data` field representing in a `Message`?
+#[derive(Display)]
 pub enum Action {
+    #[display = "create"]
     Create,
+    #[display = "update"]
     Update,
+    #[display = "delete"]
     Delete,
 }
 
-impl fmt::Display for Action {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Action::*;
-        write!(
-            f,
-            "{}",
-            match self {
-                Create => "create",
-                Update => "update",
-                Delete => "delete",
-            }
-        )
-    }
-}
-
 /// What type is the `data` field in a `Message`?
+#[derive(Display)]
 pub enum DataType {
+    #[display = "event"]
     Event,
+    #[display = "section"]
     Section,
+    #[display = "thread"]
     Thread,
+    #[display = "user"]
     User,
-}
-
-impl fmt::Display for DataType {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use DataType::*;
-        write!(
-            f,
-            "{}",
-            match self {
-                Event => "event",
-                Section => "section",
-                Thread => "thread",
-                User => "user",
-            }
-        )
-    }
 }
 
 /// A message that can be emitted to the various WebSocket clients.
