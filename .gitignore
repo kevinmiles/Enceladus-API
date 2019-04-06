@@ -4,3 +4,5 @@
 /docs/book
 /.vscode
 /api/src/.db_key
+logs.txt
+enceladus-api

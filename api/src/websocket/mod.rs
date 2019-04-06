@@ -18,7 +18,7 @@ lazy_static! {
     static ref ROOMS: RwLock<HashMap<Room, Vec<Weak<Sender>>>> = RwLock::new(HashMap::new());
 }
 
-static CONNECTED_CLIENTS: AtomicUsize = AtomicUsize::new(0);
+pub static CONNECTED_CLIENTS: AtomicUsize = AtomicUsize::new(0);
 
 #[cfg(debug_assertions)]
 const IP: &str = "127.0.0.1";

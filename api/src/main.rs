@@ -1,4 +1,12 @@
-#![feature(proc_macro_hygiene, decl_macro, custom_attribute, const_str_as_bytes)]
+#![feature(
+    async_await,
+    await_macro,
+    const_str_as_bytes,
+    custom_attribute,
+    decl_macro,
+    futures_api,
+    proc_macro_hygiene
+)]
 #![deny(rust_2018_idioms, clippy::all)]
 #![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.
 #![allow(intra_doc_link_resolution_failure, clippy::match_bool)]
@@ -14,6 +22,7 @@ mod encryption;
 mod endpoint;
 mod fairing;
 mod schema;
+mod telemetry;
 mod websocket;
 
 #[cfg(test)]
@@ -110,6 +119,13 @@ fn main() {
         .name("websocket_server".into())
         .spawn(|| {
             websocket::spawn();
+        })
+        .unwrap();
+
+    std::thread::Builder::new()
+        .name("telemetry".into())
+        .spawn(|| {
+            telemetry::spawn();
         })
         .unwrap();
 

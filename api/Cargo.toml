@@ -12,6 +12,7 @@ diesel = { version = "1.4.1", features = ["serde_json"] }
 dotenv = "0.13.0"
 dotenv_codegen = "0.11.0"
 enceladus_macros = { path = "../macros" }
+enum_display = { path = "../enum_display" }
 hashbrown = "0.1.8"
 itertools = "0.8.0"
 jsonwebtoken = "5.0.1"
@@ -22,12 +23,13 @@ parking_lot = { version = "0.7.1", features = ["nightly", "deadlock_detection"] 
 reddit = { path = "../reddit" }
 reqwest = "0.9.9"
 rocket = "0.4.0"
+rocket_cors = "0.4.0"
 serde = { version = "1.0.87", features = ["derive"] }
 serde_json = "1.0.38"
+tokio = { version = "0.1.18", features = ["async-await-preview"] }
 uuid = { version = "0.7.2", features = ["v4"] }
 ws = "0.8.0"
-rocket_cors = "0.4.0"
-enum_display = { path = "../enum_display" }
+chrono = "0.4.6"
 
 [dependencies.rocket_contrib]
 default-features = false
