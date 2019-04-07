@@ -1,5 +1,7 @@
 mod ws_clients;
+mod ws_message;
 
+pub use self::{ws_clients::*, ws_message::*};
 use chrono::prelude::*;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
@@ -28,7 +30,7 @@ async fn sleep(seconds: u64) {
 }
 
 #[inline]
-async fn append_log(message: impl Into<Vec<u8>>) {
+fn append_log(message: impl Into<Vec<u8>>) {
     // Prevent reallocating as long as the message isn't terribly long.
     let mut bytes = Vec::with_capacity(512);
 
@@ -41,6 +43,7 @@ async fn append_log(message: impl Into<Vec<u8>>) {
     // A newline for sanity.
     bytes.push(b'\n');
 
+    // Write to the log file using tokio's `AsyncWrite` trait.
     LOG_FILE
         .write()
         .poll_write(&bytes)
@@ -51,7 +54,7 @@ async fn append_log(message: impl Into<Vec<u8>>) {
 pub fn spawn() {
     tokio::run_async(
         async {
-            tokio::spawn_async(ws_clients::connected_clients());
+            tokio::spawn_async(log_ws_clients());
         },
     );
 }
