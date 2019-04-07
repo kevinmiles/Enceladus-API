@@ -28,6 +28,7 @@ pub fn guid() -> String {
 
 /// A Reddit configuration.
 /// Used to create `User`s.
+#[derive(Debug)]
 pub struct Reddit<'a> {
     redirect_uri: &'a str,
     user_agent:   &'a str,
@@ -39,6 +40,7 @@ pub struct Reddit<'a> {
 
 /// A Reddit User,
 /// containing the tokens necessary to make requests.
+#[derive(Debug)]
 pub struct User<'a> {
     reddit_instance: &'a Reddit<'a>,
     refresh_token:   String,
@@ -175,7 +177,7 @@ impl<'a> Reddit<'a> {
     /// Given a code, obtain a refresh token from Reddit.
     #[inline]
     pub fn obtain_refresh_token(&self, code: &str) -> Result<User<'_>, reqwest::Error> {
-        #[derive(Deserialize)]
+        #[derive(Deserialize, Debug)]
         struct APIReturnType {
             access_token:  String,
             expires_in:    u64,
@@ -299,7 +301,7 @@ impl User<'_> {
         // to automatically determine if the user is a moderator
         // of a specific subreddit
         #[allow(unused)]
-        #[derive(Deserialize)]
+        #[derive(Deserialize, Debug)]
         struct APIReturnType {
             name:   String,
             is_mod: bool,
@@ -311,7 +313,7 @@ impl User<'_> {
     /// Get a user's language preference.
     #[inline]
     pub fn lang(&mut self) -> Result<String, reqwest::Error> {
-        #[derive(Deserialize)]
+        #[derive(Deserialize, Debug)]
         struct APIReturnType {
             lang: String,
         }

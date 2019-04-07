@@ -59,7 +59,7 @@ generate_structs! {
 /// of the refresh and access tokens.
 /// It is otherwise identical to `UpdateUser`.
 #[cfg(debug_assertions)]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalUpdateUser {
     pub lang: Option<String>,
@@ -112,7 +112,7 @@ const fn falsey() -> bool {
 /// of the refresh and access tokens.
 /// It is otherwise identical to `InsertUser`.
 #[cfg(debug_assertions)]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalInsertUser {
     pub reddit_username: String,

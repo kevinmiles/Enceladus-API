@@ -1,2 +1,2 @@
 [workspace]
-members = ["api", "macros", "reddit", "enum_display"]
+members = ["api", "macros", "reddit"]

@@ -22,7 +22,7 @@ use std::io::Cursor;
 /// ```rust
 /// rocket::ignite.attach(FeatureFilter::default()).launch()
 /// ```
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct FeatureFilter;
 
 impl Fairing for FeatureFilter {

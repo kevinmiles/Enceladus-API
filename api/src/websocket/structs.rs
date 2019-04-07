@@ -1,8 +1,8 @@
 use crate::telemetry::log_sent_message;
-use enum_display::Display;
+use derive_more::{Constructor, Display};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{fmt, sync::Weak, time::Instant};
+use std::{sync::Weak, time::Instant};
 
 /// A request from a client to join certain rooms.
 /// Each element should be able to be parsed with `Room::from_str`.
@@ -12,27 +12,14 @@ pub struct JoinRequest {
 }
 
 /// Room to send a `Message` to.
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Display, Clone, Copy)]
 pub enum Room {
+    #[display(fmt = "user")]
     User,
+    #[display(fmt = "thread_create")]
     ThreadCreate,
+    #[display(fmt = "thread_{}", _0)]
     Thread(i32),
-}
-
-impl fmt::Display for Room {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Room::*;
-        write!(
-            f,
-            "{}",
-            match self {
-                User => "user".to_owned(),
-                ThreadCreate => "thread_create".to_owned(),
-                Thread(id) => format!("thread_{}", id),
-            }
-        )
-    }
 }
 
 impl std::str::FromStr for Room {
@@ -53,32 +40,33 @@ impl std::str::FromStr for Room {
 }
 
 /// What action is the `data` field representing in a `Message`?
-#[derive(Display)]
+#[derive(Debug, Display)]
 pub enum Action {
-    #[display = "create"]
+    #[display(fmt = "create")]
     Create,
-    #[display = "update"]
+    #[display(fmt = "update")]
     Update,
-    #[display = "delete"]
+    #[display(fmt = "delete")]
     Delete,
 }
 
 /// What type is the `data` field in a `Message`?
-#[derive(Display)]
+#[derive(Debug, Display)]
 pub enum DataType {
-    #[display = "event"]
+    #[display(fmt = "event")]
     Event,
-    #[display = "section"]
+    #[display(fmt = "section")]
     Section,
-    #[display = "thread"]
+    #[display(fmt = "thread")]
     Thread,
-    #[display = "user"]
+    #[display(fmt = "user")]
     User,
 }
 
 /// A message that can be emitted to the various WebSocket clients.
 /// Any serializable type can be sent as `data`,
 /// though it should match the indicated `data_type`.
+#[derive(Debug)]
 pub struct Message<'a, T: Serialize> {
     pub room:      Room,
     pub action:    Action,
@@ -116,16 +104,9 @@ impl<T: Serialize> Message<'_, T> {
 
 /// Use this struct to add an `id` field to a preexisting struct.
 /// The fields will be flattened by serde.
-#[derive(Serialize)]
+#[derive(Serialize, Constructor, Debug)]
 pub struct Update<'a, T: Serialize> {
     pub id: i32,
     #[serde(flatten)]
     pub data: &'a T,
-}
-
-impl<'a, T: Serialize> Update<'a, T> {
-    #[inline(always)]
-    pub fn new(id: i32, data: &'a T) -> Self {
-        Self { id, data }
-    }
 }

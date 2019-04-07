@@ -1,6 +1,7 @@
 use crate::{scope::Scope, Reddit};
 
 /// An implementation of the builder pattern for the `Reddit` struct.
+#[derive(Debug)]
 pub struct RedditBuilder<'a> {
     redirect_uri: Option<&'a str>,
     user_agent:   Option<&'a str>,

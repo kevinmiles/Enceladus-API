@@ -43,14 +43,14 @@ generate_structs! {
 }
 
 /// Only these fields may be externally present when setting a section's lock.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalLockSection {
     pub lock_held_by_user_id: Option<i32>,
 }
 
 /// Only these fields may be internally present when setting a section's lock.
-#[derive(Serialize, AsChangeset)]
+#[derive(Serialize, AsChangeset, Debug)]
 #[table_name = "section"]
 pub struct LockSection {
     pub lock_held_by_user_id: Option<i32>,

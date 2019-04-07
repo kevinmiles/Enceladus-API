@@ -2,6 +2,7 @@ use crate::{Reddit, User};
 use std::time::SystemTime;
 
 /// An implementation of the builder pattern for the `User` struct.
+#[derive(Debug)]
 pub struct UserBuilder<'a> {
     reddit_instance: Option<&'a Reddit<'a>>,
     refresh_token:   Option<String>,

@@ -17,7 +17,7 @@ const ROCKET_SECRET_KEY: &[u8] = dotenv!("ROCKET_SECRET_KEY").as_bytes();
 /// This represents the body ("claim") of the JWT used for authorization.
 /// The `user_id` matches with the ID of a `User` object in the database,
 /// while `iat` is the UTC timestamp the token was issued at.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Claim {
     user_id: i32,
     iat:     u64,

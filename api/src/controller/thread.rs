@@ -51,7 +51,7 @@ generate_structs! {
 
 // Not all fields that are insertable should be provided by the user.
 // Use an `ExternalInsertThread` wherever user input is expected.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ExternalInsertThread {
     pub thread_name: String,
