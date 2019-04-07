@@ -27,6 +27,14 @@ with the only difference being in performance.
 As such, it is highly recommended to only build with the `--release` flag when necessary.
 On my laptop, the release build takes approximately 7 minutes from scratch.
 
+### Feature flags
+
+Telemetry logging is fully optional,
+though it is enabled by default.
+To disable it,
+provide the `--no-default-features` flag
+when running `cargo build` or `cargo build --release`.
+
 ## Changes to database
 
 If you're making a change to the database itself,

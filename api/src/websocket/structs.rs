@@ -1,3 +1,4 @@
+#[cfg(feature = "telemetry")]
 use crate::telemetry::log_sent_message;
 use derive_more::{Constructor, Display};
 use serde::{Deserialize, Serialize};
@@ -91,12 +92,20 @@ impl<T: Serialize> Message<'_, T> {
         })
         .to_string();
 
-        let send_start = Instant::now();
+        #[cfg(feature = "telemetry")]
+        {
+            let send_start = Instant::now();
+            for client in clients.iter().filter_map(Weak::upgrade) {
+                let _ = client.send(message);
+            }
+            let elapsed = send_start.elapsed().as_micros();
+            log_sent_message(message.len(), clients.len(), elapsed);
+        }
+
+        #[cfg(not(feature = "telemetry"))]
         for client in clients.iter().filter_map(Weak::upgrade) {
             let _ = client.send(message);
         }
-        let elapsed = send_start.elapsed().as_micros();
-        log_sent_message(message.len(), clients.len(), elapsed);
 
         Ok(())
     }

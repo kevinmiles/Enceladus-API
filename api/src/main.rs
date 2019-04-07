@@ -22,6 +22,7 @@ mod encryption;
 mod endpoint;
 mod fairing;
 mod schema;
+#[cfg(feature = "telemetry")]
 mod telemetry;
 mod websocket;
 
@@ -122,6 +123,7 @@ fn main() {
         })
         .unwrap();
 
+    #[cfg(feature = "telemetry")]
     std::thread::Builder::new()
         .name("telemetry".into())
         .spawn(|| {
