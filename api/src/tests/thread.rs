@@ -59,7 +59,7 @@ fn create() {
         "thread_name": guid(),
         "display_name": guid(),
         "space__t0": rand::random::<i64>(),
-        "youtube_id": guid()[0..11],
+        "video_url": guid(),
         "event_column_headers": [],
     });
 
@@ -90,7 +90,7 @@ fn create() {
             // user-provided
             "thread_name": thread["thread_name"],
             "display_name": thread["display_name"],
-            "youtube_id": thread["youtube_id"],
+            "video_url": thread["video_url"],
             "event_column_headers": thread["event_column_headers"],
         })
     );
@@ -120,16 +120,16 @@ fn update() {
     // setup
     let (user_id, user_token) = user::create(&mut client);
     let created_value = create_thread(&mut client, &user_token);
-    assert_eq!(created_value["youtube_id"].as_str(), None);
+    assert_eq!(created_value["video_url"].as_str(), None);
 
     // test
-    let data = json!({ "youtube_id": guid()[0..11] });
+    let data = json!({ "video_url": guid() });
     let body = client
         .with_base(BASE)
         .patch(Some(&user_token), &created_value["id"], &data)
         .assert_ok()
         .get_body_object();
-    assert_eq!(body["youtube_id"], data["youtube_id"]);
+    assert_eq!(body["video_url"], data["video_url"]);
 
     // teardown
     client

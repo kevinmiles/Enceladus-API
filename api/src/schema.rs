@@ -27,7 +27,7 @@ table! {
         post_id -> Nullable<Varchar>,
         subreddit -> Nullable<Varchar>,
         space__t0 -> Nullable<Int8>,
-        youtube_id -> Nullable<Varchar>,
+        video_url -> Nullable<Varchar>,
         spacex__api_id -> Nullable<Varchar>,
         created_by_user_id -> Int4,
         sections_id -> Array<Int4>,
