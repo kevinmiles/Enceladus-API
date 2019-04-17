@@ -3,4 +3,4 @@
 cargo fmt -- --check &&
   cargo clippy &&
   cargo check &&
-  RUST_BACKTRACE=1 cargo test -v
+  RUST_BACKTRACE=1 cargo test

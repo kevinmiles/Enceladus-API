@@ -3,7 +3,13 @@ language: rust
 cache: cargo
 
 rust:
-  - nightly-2019-03-05
+  - nightly-2019-03-12
+  - nightly
+
+matrix:
+  allow_failures:
+    - nightly
+  fast_finish: true
 
 install:
   - rustup component add rustfmt
