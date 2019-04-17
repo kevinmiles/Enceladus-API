@@ -1,10 +1,9 @@
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
-    Weak,
 };
 use ws::{CloseCode, Handler, Handshake, Message as WsMessage, Result, Sender};
 
@@ -12,10 +11,11 @@ mod structs;
 pub use structs::*;
 
 lazy_static! {
-    // FIXME Change this `Vec` to a `HashSet` or `BTreeSet`
-    // as soon as upstream changes allow.
-    // The current implementation makes removing an entry quite expensive.
-    static ref ROOMS: RwLock<HashMap<Room, Vec<Weak<Sender>>>> = RwLock::new(HashMap::new());
+    // We're using `Arc` and not `Weak`,
+    // as the latter doesn't implement `Hash`.
+    // As such, we have to manually drop the reference
+    // in the `on_close` method to prevent a memory leak.
+    static ref ROOMS: RwLock<HashMap<Room, HashSet<Arc<Sender>>>> = RwLock::new(HashMap::new());
 }
 
 pub static CONNECTED_CLIENTS: AtomicUsize = AtomicUsize::new(0);
@@ -29,7 +29,7 @@ const PORT: u16 = 3001;
 #[derive(Debug)]
 struct Socket {
     out:   Arc<Sender>,
-    rooms: HashMap<Room, usize>,
+    rooms: HashSet<Room>,
 }
 
 impl Handler for Socket {
@@ -55,15 +55,14 @@ impl Handler for Socket {
         .into_iter()
         .filter_map(|s| s.parse().ok())
         {
-            let room_set = match rooms.get_mut(&room) {
-                Some(s) => s,
-                None => {
-                    rooms.insert(room, vec![]);
-                    rooms.get_mut(&room).unwrap()
-                }
-            };
-            room_set.push(Arc::downgrade(&self.out));
-            self.rooms.insert(room, room_set.len() - 1);
+            // Store the connection itself in the global room.
+            rooms
+                .entry(room)
+                .or_insert(HashSet::new())
+                .insert(Arc::clone(&self.out));
+
+            // Store the connection's rooms on the instance.
+            self.rooms.insert(room);
         }
 
         Ok(())
@@ -75,8 +74,11 @@ impl Handler for Socket {
         if !self.rooms.is_empty() {
             let mut rooms = ROOMS.write();
 
-            for (room, &index) in self.rooms.iter() {
-                rooms.get_mut(room).unwrap().remove(index);
+            // Leave all rooms the user is currently in.
+            // These should be the final references to the values,
+            // so doing this should call `Drop` and free up the memory.
+            for room in self.rooms.iter() {
+                rooms.get_mut(room).unwrap().remove(&self.out);
             }
         }
 
@@ -89,7 +91,7 @@ pub fn spawn() {
     let addr = format!("{}:{}", IP, PORT);
     ws::listen(addr, |out| Socket {
         out:   Arc::new(out),
-        rooms: HashMap::new(),
+        rooms: HashSet::new(),
     })
     .unwrap();
 }

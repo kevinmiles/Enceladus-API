@@ -3,7 +3,7 @@ use crate::telemetry::log_sent_message;
 use derive_more::{Constructor, Display};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{sync::Weak, time::Instant};
+use std::time::Instant;
 
 /// A request from a client to join certain rooms.
 /// Each element should be able to be parsed with `Room::from_str`.
@@ -95,7 +95,7 @@ impl<T: Serialize> Message<'_, T> {
         #[cfg(feature = "telemetry")]
         {
             let send_start = Instant::now();
-            for client in clients.iter().filter_map(Weak::upgrade) {
+            for client in clients.iter() {
                 let _ = client.send(message);
             }
             let elapsed = send_start.elapsed().as_micros();

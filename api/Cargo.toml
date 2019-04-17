@@ -33,7 +33,10 @@ serde = { version = "1.0.87", features = ["derive"] }
 serde_json = "1.0.38"
 tokio = { version = "0.1.18", features = ["async-await-preview"], optional = true }
 uuid = { version = "0.7.2", features = ["v4"] }
-ws = "0.8.0"
+
+# FIXME Switch back to using regular versions once housleyjk/ws-rs#257 is merged.
+# ws = "0.8.0"
+ws = { git = 'https://github.com/jhpratt/ws-rs' }
 
 [dependencies.rocket_contrib]
 default-features = false
