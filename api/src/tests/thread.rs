@@ -86,6 +86,7 @@ fn create() {
             "subreddit": null,
             "sections_id": [],
             "events_id": [],
+            "is_live": false,
 
             // user-provided
             "thread_name": thread["thread_name"],

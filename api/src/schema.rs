@@ -34,6 +34,7 @@ table! {
         events_id -> Array<Int4>,
         event_column_headers -> Array<Text>,
         space__utc_col_index -> Nullable<Int2>,
+        is_live -> Bool,
     }
 }
 

@@ -46,6 +46,7 @@ generate_structs! {
         events_id: Vec<i32> = vec![],
         event_column_headers: Vec<String>,
         readonly space__utc_col_index: Option<i16>,
+        is_live: bool = false,
     }
 }
 
@@ -62,6 +63,7 @@ pub struct ExternalInsertThread {
     pub spacex__api_id: Option<String>,
     pub event_column_headers: Vec<String>,
     pub space__utc_col_index: Option<i16>,
+    pub is_live: Option<bool>,
 }
 
 impl Thread {
@@ -180,6 +182,7 @@ impl Thread {
             sections_id: vec![],
             event_column_headers: data.event_column_headers.clone(),
             space__utc_col_index: data.space__utc_col_index,
+            is_live: data.is_live.unwrap_or(false),
         };
 
         let result: Self = diesel::insert_into(thread)
