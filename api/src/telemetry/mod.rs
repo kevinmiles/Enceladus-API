@@ -1,12 +1,27 @@
+mod requests;
 mod ws_clients;
 mod ws_message;
 
-pub use self::{ws_clients::*, ws_message::*};
+pub use self::{requests::*, ws_clients::*, ws_message::*};
 use chrono::prelude::*;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
-use std::time::{Duration, Instant};
+use std::{
+    ops::Deref,
+    time::{Duration, Instant},
+};
 use tokio::{await, fs::file::File, prelude::*, timer::Delay};
+
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy)]
+struct IncludesTimestamp(bool);
+impl Deref for IncludesTimestamp {
+    type Target = bool;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 const LOG_FILE_NAME: &str = "logs.txt";
 
@@ -30,12 +45,15 @@ async fn sleep(seconds: u64) {
 }
 
 #[inline]
-fn append_log(message: impl Into<Vec<u8>>) {
+fn append_log(includes_timestamp: IncludesTimestamp, message: impl Into<Vec<u8>>) {
     // Prevent reallocating as long as the message isn't terribly long.
     let mut bytes = Vec::with_capacity(512);
 
-    // Current time in UTC.
-    bytes.append(&mut Utc::now().format("%Y%m%dT%H%M%SZ ").to_string().into());
+    // Prepend a timestamp if one is not provided.
+    if !*includes_timestamp {
+        // Current time in UTC.
+        bytes.append(&mut Utc::now().format("%Y%m%dT%H%M%SZ ").to_string().into());
+    }
 
     // The message provided by the caller.
     bytes.append(&mut message.into());
@@ -54,6 +72,7 @@ fn append_log(message: impl Into<Vec<u8>>) {
 pub fn spawn() {
     tokio::run_async(
         async {
+            tokio::spawn_async(log_requests());
             tokio::spawn_async(log_ws_clients());
         },
     );
