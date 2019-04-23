@@ -1,5 +1,5 @@
 [package]
-name = "enceladus-api"
+name = "enceladus_api"
 version = "0.1.0"
 repository = "https://github.com/r-spacex/Enceladus-API-rs"
 license = "Apache-2.0"
@@ -9,7 +9,7 @@ publish = false
 
 [features]
 default = ["telemetry"]
-telemetry = ["chrono", "tokio"]
+telemetry = ["chrono", "tokio", "rocket_telemetry"]
 
 [dependencies]
 chrono = { version = "0.4.6", optional = true }
@@ -29,6 +29,7 @@ reddit = { path = "../reddit" }
 reqwest = "0.9.9"
 rocket = "0.4.0"
 rocket_cors = "0.4.0"
+rocket_telemetry = { path = "../rocket_telemetry", optional = true }
 serde = { version = "1.0.87", features = ["derive"] }
 serde_json = "1.0.38"
 tokio = { version = "0.1.18", features = ["async-await-preview"], optional = true }

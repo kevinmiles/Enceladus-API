@@ -1,0 +1,10 @@
+[package]
+name = "rocket_telemetry"
+version = "0.1.0"
+authors = ["Jacob Pratt <the.z.cuber@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+chrono = "0.4.6"
+parking_lot = "0.7.1"
+rocket = "0.4.0"

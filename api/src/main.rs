@@ -21,6 +21,7 @@ mod controller;
 mod encryption;
 mod endpoint;
 mod fairing;
+mod rocket_conditional_attach;
 mod schema;
 #[cfg(feature = "telemetry")]
 mod telemetry;
@@ -33,8 +34,11 @@ use dotenv::dotenv;
 use endpoint::*;
 use fairing::*;
 use rocket::{routes, Rocket};
+use rocket_conditional_attach::*;
 use rocket_contrib::{database, helmet::SpaceHelmet};
 use rocket_cors::Cors;
+#[cfg(feature = "telemetry")]
+use rocket_telemetry::Telemetry;
 
 /// Single point to change if we need to alter the DBMS.
 pub type Database = diesel::PgConnection;
@@ -65,6 +69,7 @@ pub fn server() -> Rocket {
         .attach(Cors::default())
         .attach(DataDB::fairing())
         .attach(FeatureFilter::default())
+        .attach_if(cfg!(feature = "telemetry"), Telemetry::default())
         .manage(Cors::default())
         .mount("/", rocket_cors::catch_all_options_routes())
         .mount("/meta", routes![meta::meta])
