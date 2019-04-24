@@ -2,18 +2,15 @@
 #![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.
 #![allow(intra_doc_link_resolution_failure, clippy::match_bool)]
 
-mod reddit_builder;
 mod scope;
-mod user_builder;
 
 use itertools::Itertools;
 use lazy_static::lazy_static;
-use reddit_builder::RedditBuilder;
 use reqwest::{header::USER_AGENT, Client, Url, UrlError};
 pub use scope::Scope;
 use serde::Deserialize;
 use std::time::{Duration, SystemTime};
-use user_builder::UserBuilder;
+use derive_builder::*;
 
 lazy_static! {
     static ref CLIENT: Client = Client::builder().gzip(true).build().unwrap();
@@ -28,7 +25,7 @@ pub fn guid() -> String {
 
 /// A Reddit configuration.
 /// Used to create `User`s.
-#[derive(Debug)]
+#[derive(Builder, Debug)]
 pub struct Reddit<'a> {
     redirect_uri: &'a str,
     user_agent:   &'a str,
@@ -40,7 +37,7 @@ pub struct Reddit<'a> {
 
 /// A Reddit User,
 /// containing the tokens necessary to make requests.
-#[derive(Debug)]
+#[derive(Builder, Debug)]
 pub struct User<'a> {
     reddit_instance: &'a Reddit<'a>,
     refresh_token:   String,
@@ -53,7 +50,7 @@ impl Reddit<'_> {
     /// Return a `RedditBuilder`.
     /// The same as calling `RedditBuilder::default()`.
     #[inline(always)]
-    pub const fn builder() -> RedditBuilder<'static> {
+    pub fn builder() -> RedditBuilder<'static> {
         RedditBuilder::default()
     }
 
@@ -99,7 +96,7 @@ impl User<'_> {
     /// Return a `UserBuilder`.
     /// The same as calling `UserBuilder::default()`.
     #[inline(always)]
-    pub const fn builder() -> UserBuilder<'static> {
+    pub fn builder() -> UserBuilder<'static> {
         UserBuilder::default()
     }
 
@@ -176,7 +173,7 @@ impl<'a> Reddit<'a> {
 
     /// Given a code, obtain a refresh token from Reddit.
     #[inline]
-    pub fn obtain_refresh_token(&self, code: &str) -> Result<User<'_>, reqwest::Error> {
+    pub fn obtain_refresh_token(&self, code: &str) -> reqwest::Result<User<'_>> {
         #[derive(Deserialize, Debug)]
         struct APIReturnType {
             access_token:  String,
@@ -213,7 +210,7 @@ fn endpoint(path: &str) -> String {
 /// Endpoints
 impl User<'_> {
     #[inline]
-    fn me(&mut self) -> Result<reqwest::Response, reqwest::Error> {
+    fn me(&mut self) -> reqwest::Result<reqwest::Response> {
         CLIENT
             .get(&endpoint("/api/v1/me"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
@@ -222,7 +219,7 @@ impl User<'_> {
     }
 
     #[inline]
-    fn prefs(&mut self) -> Result<reqwest::Response, reqwest::Error> {
+    fn prefs(&mut self) -> reqwest::Result<reqwest::Response> {
         CLIENT
             .get(&endpoint("/api/v1/me/prefs"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
@@ -236,7 +233,7 @@ impl User<'_> {
         subreddit: &str,
         title: &str,
         text: Option<&str>,
-    ) -> Result<reqwest::Response, reqwest::Error> {
+    ) -> reqwest::Result<reqwest::Response> {
         CLIENT
             .post(&endpoint("/api/submit"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
@@ -254,7 +251,7 @@ impl User<'_> {
     }
 
     #[inline]
-    fn edit(&mut self, thing_id: &str, text: &str) -> Result<reqwest::Response, reqwest::Error> {
+    fn edit(&mut self, thing_id: &str, text: &str) -> reqwest::Result<reqwest::Response> {
         CLIENT
             .post(&endpoint("/api/editusertext"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
@@ -264,7 +261,7 @@ impl User<'_> {
     }
 
     #[inline]
-    fn approve_internal(&mut self, thing_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    fn approve_internal(&mut self, thing_id: &str) -> reqwest::Result<reqwest::Response> {
         CLIENT
             .post(&endpoint("/api/approve"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
@@ -278,7 +275,7 @@ impl User<'_> {
         &mut self,
         thing_id: &str,
         state: bool,
-    ) -> Result<reqwest::Response, reqwest::Error> {
+    ) -> reqwest::Result<reqwest::Response> {
         CLIENT
             .post(&endpoint("/api/set_subreddit_sticky"))
             .header(USER_AGENT, self.reddit_instance.user_agent)
@@ -296,7 +293,7 @@ impl User<'_> {
 impl User<'_> {
     /// Get a user's username on Reddit.
     #[inline]
-    pub fn username(&mut self) -> Result<String, reqwest::Error> {
+    pub fn username(&mut self) -> reqwest::Result<String> {
         // We may use the `is_mod` field in the future
         // to automatically determine if the user is a moderator
         // of a specific subreddit
@@ -312,7 +309,7 @@ impl User<'_> {
 
     /// Get a user's language preference.
     #[inline]
-    pub fn lang(&mut self) -> Result<String, reqwest::Error> {
+    pub fn lang(&mut self) -> reqwest::Result<String> {
         #[derive(Deserialize, Debug)]
         struct APIReturnType {
             lang: String,
@@ -329,7 +326,7 @@ impl User<'_> {
         subreddit: &str,
         title: &str,
         text: Option<&str>,
-    ) -> Result<String, reqwest::Error> {
+    ) -> reqwest::Result<String> {
         Ok(self
             .submit(subreddit, title, text)?
             .json::<serde_json::Value>()
@@ -345,19 +342,19 @@ impl User<'_> {
 
     /// Edit an existing thread on Reddit.
     #[inline]
-    pub fn edit_self_post(&mut self, thing_id: &str, text: &str) -> Result<(), reqwest::Error> {
+    pub fn edit_self_post(&mut self, thing_id: &str, text: &str) -> reqwest::Result<()> {
         self.edit(thing_id, text).map(|_| ())
     }
 
     /// Approve a thread on Reddit.
     #[inline]
-    pub fn approve(&mut self, thing_id: &str) -> Result<(), reqwest::Error> {
+    pub fn approve(&mut self, thing_id: &str) -> reqwest::Result<()> {
         self.approve_internal(thing_id).map(|_| ())
     }
 
     /// Sticky or unsticky a thread on Reddit.
     #[inline]
-    pub fn set_sticky(&mut self, thing_id: &str, state: bool) -> Result<(), reqwest::Error> {
+    pub fn set_sticky(&mut self, thing_id: &str, state: bool) -> reqwest::Result<()> {
         self.set_sticky_internal(thing_id, state).map(|_| ())
     }
 }

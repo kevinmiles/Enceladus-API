@@ -389,12 +389,10 @@ impl<'a> Into<reddit::User<'a>> for User {
     #[inline]
     fn into(self) -> reddit::User<'a> {
         reddit::User::builder()
-            .with_reddit_instance(&REDDIT)
-            .with_refresh_token(decrypt(&*self.refresh_token))
-            .with_access_token(decrypt(&*self.access_token))
-            .with_expires_at(
-                UNIX_EPOCH + Duration::from_secs(self.access_token_expires_at_utc as u64),
-            )
+            .reddit_instance(&REDDIT)
+            .refresh_token(decrypt(&*self.refresh_token))
+            .access_token(decrypt(&*self.access_token))
+            .expires_at(UNIX_EPOCH + Duration::from_secs(self.access_token_expires_at_utc as u64))
             .build()
             .unwrap()
     }

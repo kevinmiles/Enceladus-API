@@ -20,14 +20,13 @@ use std::{
 };
 
 lazy_static! {
-    // FIXME make this a regular `const` or `static` once `Option::unwrap` becomes a `const fn`.
     pub static ref REDDIT: Reddit<'static> = Reddit::builder()
-        .with_redirect_uri(dotenv!("REDDIT_REDIRECT_URI"))
-        .with_user_agent(dotenv!("REDDIT_USER_AGENT"))
-        .with_client_id(dotenv!("REDDIT_CLIENT_ID"))
-        .with_secret(dotenv!("REDDIT_SECRET"))
-        .with_permanent(true)
-        .with_scopes({
+        .redirect_uri(dotenv!("REDDIT_REDIRECT_URI"))
+        .user_agent(dotenv!("REDDIT_USER_AGENT"))
+        .client_id(dotenv!("REDDIT_CLIENT_ID"))
+        .secret(dotenv!("REDDIT_SECRET"))
+        .permanent(true)
+        .scopes({
             use reddit::Scope::*;
             &[
                 Account,  // Find language
@@ -127,10 +126,10 @@ pub fn callback(
 
     if cfg!(test) {
         reddit_user = reddit::User::builder()
-            .with_reddit_instance(&REDDIT)
-            .with_refresh_token(guid())
-            .with_access_token(guid())
-            .with_expires_at(SystemTime::now() + Duration::from_secs(3600))
+            .reddit_instance(&REDDIT)
+            .refresh_token(guid())
+            .access_token(guid())
+            .expires_at(SystemTime::now() + Duration::from_secs(3600))
             .build()
             .unwrap();
         lang = guid()[0..2].to_owned();
