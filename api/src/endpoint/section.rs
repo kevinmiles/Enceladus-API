@@ -32,18 +32,18 @@ pub fn post(
     user: User,
     data: Json<InsertSection>,
 ) -> RocketResult<Created<Json<Section>>> {
-    if user.can_modify_thread(&conn, data.in_thread_id) {
-        let ret_val = created!(Section::create(&conn, &data));
-
-        Thread::find_id(&conn, data.in_thread_id)
-            .unwrap()
-            .update_on_reddit(&conn)
-            .unwrap();
-
-        return ret_val;
+    if !user.can_modify_thread(&conn, data.in_thread_id) {
+        return Err(Status::Unauthorized);
     }
 
-    Err(Status::Unauthorized)
+    let ret_val = created!(Section::create(&conn, &data));
+
+    Thread::find_id(&conn, data.in_thread_id)
+        .expect("thread not found")
+        .update_on_reddit(&conn)
+        .expect("error posting on Reddit");
+
+    ret_val
 }
 
 /// We need to define a type discriminant to allow Rocket to discern between
@@ -84,14 +84,10 @@ fn set_lock(
     id: i32,
     data: ExternalLockSection,
 ) -> RocketResult<Json<Section>> {
-    let section = Section::find_id(&conn, id);
-
-    // The section we're trying to find wasn't found.
-    if section.is_err() {
-        return Err(Status::NotFound);
-    }
-
-    let section = section.unwrap();
+    let section = match Section::find_id(&conn, id) {
+        Ok(section) => section,
+        Err(_) => return Err(Status::NotFound),
+    };
 
     // Ensure the user possesses the authority to modify the lock if able to.
     if !user.can_modify_thread(&conn, section.in_thread_id) {
@@ -114,19 +110,19 @@ fn set_lock(
             && data.lock_held_by_user_id == Some(user.id))
         || (section.lock_assigned_at_utc + LOCK_DURATION_SECONDS <= current_unix_timestamp)
     {
-        return json_result!(Section::set_lock(
+        json_result!(Section::set_lock(
             &conn,
             id,
             &LockSection {
                 lock_held_by_user_id: data.lock_held_by_user_id,
                 lock_assigned_at_utc: current_unix_timestamp,
             }
-        ));
+        ))
+    } else {
+        // The user isn't setting the lock to themselves,
+        // or they possess the lock and are trying to set it to another user.
+        Err(Status::Forbidden)
     }
-
-    // The user isn't setting the lock to themselves,
-    // or they possess the lock and are trying to set it to another user.
-    Err(Status::Forbidden)
 }
 
 /// Update any fields aside from the lock.
@@ -137,40 +133,44 @@ fn update_fields(
     id: i32,
     data: UpdateSection,
 ) -> RocketResult<Json<Section>> {
-    if let Ok(section) = Section::find_id(&conn, id) {
-        if user.can_modify_thread(&conn, section.in_thread_id) {
-            let ret_val = json_result!(Section::update(&conn, id, &data));
+    let section = match Section::find_id(&conn, id) {
+        Ok(section) => section,
+        Err(_) => return Err(Status::NotFound),
+    };
 
-            Thread::find_id(&conn, section.in_thread_id)
-                .unwrap()
-                .update_on_reddit(&conn)
-                .unwrap();
-
-            ret_val
-        } else {
-            Err(Status::Unauthorized)
-        }
-    } else {
-        Err(Status::NotFound)
+    if !user.can_modify_thread(&conn, section.in_thread_id) {
+        return Err(Status::Unauthorized);
     }
+
+    let ret_val = json_result!(Section::update(&conn, id, &data));
+
+    Thread::find_id(&conn, section.in_thread_id)
+        .expect("thread not found")
+        .update_on_reddit(&conn)
+        .expect("error updating on Reddit");
+
+    ret_val
 }
 
 /// Delete a `Section` and any references to its ID.
 #[inline]
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, user: User, id: i32) -> RocketResult<Status> {
-    if let Ok(section) = Section::find_id(&conn, id) {
-        if user.can_modify_thread(&conn, section.in_thread_id) {
-            let ret_val = no_content!(Section::delete(&conn, id));
+    let section = match Section::find_id(&conn, id) {
+        Ok(section) => section,
+        Err(_) => return Err(Status::NotFound),
+    };
 
-            Thread::find_id(&conn, section.in_thread_id)
-                .unwrap()
-                .update_on_reddit(&conn)
-                .unwrap();
-
-            return ret_val;
-        }
+    if !user.can_modify_thread(&conn, section.in_thread_id) {
+        return Err(Status::Unauthorized);
     }
 
-    Err(Status::Unauthorized)
+    let ret_val = no_content!(Section::delete(&conn, id));
+
+    Thread::find_id(&conn, section.in_thread_id)
+        .expect("thread not found")
+        .update_on_reddit(&conn)
+        .expect("error updating on Reddit");
+
+    ret_val
 }

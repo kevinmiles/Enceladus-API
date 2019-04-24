@@ -3,4 +3,4 @@
 cargo fmt -- --check &&
   cargo clippy &&
   cargo check &&
-  RUST_BACKTRACE=1 cargo test -p enceladus_api -p enceladus_macros -p reddit -p rocket_telemetry
+  RUST_BACKTRACE=1 cargo test --all

@@ -5,7 +5,8 @@
     custom_attribute,
     decl_macro,
     futures_api,
-    proc_macro_hygiene
+    proc_macro_hygiene,
+    bind_by_move_pattern_guards
 )]
 #![deny(rust_2018_idioms, clippy::all)]
 #![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.

@@ -31,7 +31,7 @@ impl std::str::FromStr for Room {
         match string {
             "user" => Ok(Room::User),
             "thread_create" => Ok(Room::ThreadCreate),
-            room if room.starts_with("thread_") => match room[7..].parse() {
+            room if room.starts_with("thread_") => match room["thread_".len()..].parse() {
                 Ok(id) => Ok(Room::Thread(id)),
                 Err(_) => Err("invalid thread id"),
             },
@@ -103,7 +103,7 @@ impl<T: Serialize> Message<'_, T> {
         }
 
         #[cfg(not(feature = "telemetry"))]
-        for client in clients.iter().filter_map(Weak::upgrade) {
+        for client in clients.iter() {
             let _ = client.send(message);
         }
 

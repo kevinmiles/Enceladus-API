@@ -17,35 +17,35 @@ pub fn post(
     user: User,
     data: Json<InsertEvent>,
 ) -> RocketResult<Created<Json<Event>>> {
-    if user.can_modify_thread(&conn, data.in_thread_id) {
-        let thread = Thread::find_id(&conn, data.in_thread_id).unwrap();
-
-        // Ensure the provided columns are of the expected types and length.
-        if !data.cols.is_array()
-            || thread.event_column_headers.len() != data.cols.clone().as_array().unwrap().len()
-            || !data
-                .cols
-                .clone()
-                .as_array()
-                .unwrap()
-                .iter()
-                .zip(0..)
-                .all(|(val, i)| match thread.space__utc_col_index {
-                    Some(n) if i == n => val.is_number(),
-                    _ => val.is_string(),
-                })
-        {
-            return Err(Status::UnprocessableEntity);
-        }
-
-        let ret_val = created!(Event::create(&conn, &data));
-
-        thread.update_on_reddit(&conn).unwrap();
-
-        return ret_val;
+    if !user.can_modify_thread(&conn, data.in_thread_id) {
+        return Err(Status::Unauthorized);
     }
 
-    Err(Status::Unauthorized)
+    let thread = Thread::find_id(&conn, data.in_thread_id).expect("thread not found");
+
+    // Ensure the provided columns are of the expected types and length.
+    if !data.cols.is_array()
+        || thread.event_column_headers.len() != data.cols.clone().as_array().unwrap().len()
+        || !data
+            .cols
+            .clone()
+            .as_array()
+            .unwrap()
+            .iter()
+            .zip(0..)
+            .all(|(val, i)| match thread.space__utc_col_index {
+                Some(n) if i == n => val.is_number(),
+                _ => val.is_string(),
+            })
+    {
+        return Err(Status::UnprocessableEntity);
+    }
+
+    let ret_val = created!(Event::create(&conn, &data));
+    thread
+        .update_on_reddit(&conn)
+        .expect("error updating on Reddit");
+    ret_val
 }
 
 /// We need to define a type discriminant to allow Rocket to discern between
@@ -76,25 +76,26 @@ pub fn patch(
     match data.into_inner() {
         FullEvent(data) => patch_full_event(conn, user, id, data),
         PartialEvent(data) => {
-            if let Ok(mut event) = Event::find_id(&conn, id) {
-                let event_fields = &mut event.cols;
+            let mut event = match Event::find_id(&conn, id) {
+                Ok(event) => event,
+                Err(_) => return Err(Status::NotFound),
+            };
 
-                for (key, value) in data.into_iter() {
-                    event_fields[key] = value;
-                }
+            let event_fields = &mut event.cols;
 
-                patch_full_event(
-                    conn,
-                    user,
-                    id,
-                    UpdateEvent {
-                        cols: Some(event.cols),
-                        ..UpdateEvent::default()
-                    },
-                )
-            } else {
-                Err(Status::NotFound)
+            for (key, value) in data.into_iter() {
+                event_fields[key] = value;
             }
+
+            patch_full_event(
+                conn,
+                user,
+                id,
+                UpdateEvent {
+                    cols: Some(event.cols),
+                    ..UpdateEvent::default()
+                },
+            )
         }
     }
 }
@@ -107,40 +108,44 @@ pub fn patch_full_event(
     id: i32,
     data: UpdateEvent,
 ) -> RocketResult<Json<Event>> {
-    if let Ok(event) = Event::find_id(&conn, id) {
-        if user.can_modify_thread(&conn, event.in_thread_id) {
-            let ret_val = json_result!(Event::update(&conn, id, &data));
+    let event = match Event::find_id(&conn, id) {
+        Ok(event) => event,
+        Err(_) => return Err(Status::NotFound),
+    };
 
-            Thread::find_id(&conn, event.in_thread_id)
-                .unwrap()
-                .update_on_reddit(&conn)
-                .unwrap();
-
-            ret_val
-        } else {
-            Err(Status::Unauthorized)
-        }
-    } else {
-        Err(Status::NotFound)
+    if !user.can_modify_thread(&conn, event.in_thread_id) {
+        return Err(Status::Unauthorized);
     }
+
+    let ret_val = json_result!(Event::update(&conn, id, &data));
+
+    Thread::find_id(&conn, event.in_thread_id)
+        .expect("thread not found")
+        .update_on_reddit(&conn)
+        .expect("error updating on Reddit");
+
+    ret_val
 }
 
 /// Delete an `Event` as well as any references to its ID.
 #[inline]
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, user: User, id: i32) -> RocketResult<Status> {
-    if let Ok(event) = Event::find_id(&conn, id) {
-        if user.can_modify_thread(&conn, event.in_thread_id) {
-            let ret_val = no_content!(Event::delete(&conn, id));
+    let event = match Event::find_id(&conn, id) {
+        Ok(event) => event,
+        Err(_) => return Err(Status::Unauthorized),
+    };
 
-            Thread::find_id(&conn, event.in_thread_id)
-                .unwrap()
-                .update_on_reddit(&conn)
-                .unwrap();
-
-            return ret_val;
-        }
+    if !user.can_modify_thread(&conn, event.in_thread_id) {
+        return Err(Status::Unauthorized);
     }
 
-    Err(Status::Unauthorized)
+    let ret_val = no_content!(Event::delete(&conn, id));
+
+    Thread::find_id(&conn, event.in_thread_id)
+        .expect("thread not found")
+        .update_on_reddit(&conn)
+        .expect("error updating on Reddit");
+
+    ret_val
 }

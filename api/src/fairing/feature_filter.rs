@@ -47,21 +47,18 @@ impl Fairing for FeatureFilter {
             .unwrap();
         let features: &HashSet<String> = &features.split(',').map(str::to_lowercase).collect();
 
-        let mut body: Json = {
-            let body_string = response.body_string();
-            if body_string.is_none() {
-                // Error converting the body to a String;
-                // there aren't any fields to remove.
-                return;
-            }
-            let body_string = body_string.unwrap();
-
-            match serde_json::from_str(&body_string) {
+        let mut body: Json = match response.body_string() {
+            Some(body_string) => match serde_json::from_str(&body_string) {
                 Ok(body) => body,
                 Err(_) => {
                     // Not a JSON body, so there's no fields to remove.
                     return response.set_sized_body(Cursor::new(body_string));
                 }
+            },
+            None => {
+                // Error converting the body to a String;
+                // there aren't any fields to remove.
+                return;
             }
         };
 

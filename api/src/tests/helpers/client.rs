@@ -94,7 +94,7 @@ impl<'a> Client<'a> {
 
 #[derive(Debug)]
 pub struct Response<'a>(RocketResponse<'a>);
-impl<'a> Response<'a> {
+impl Response<'_> {
     #[inline]
     fn status(&self) -> Status {
         self.0.status()

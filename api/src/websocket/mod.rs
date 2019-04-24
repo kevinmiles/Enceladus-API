@@ -5,7 +5,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use ws::{CloseCode, Handler, Handshake, Message as WsMessage, Result, Sender};
+use ws::{CloseCode, Handler, Handshake, Message as WsMessage, Sender};
 
 mod structs;
 pub use structs::*;
@@ -34,13 +34,13 @@ struct Socket {
 
 impl Handler for Socket {
     #[inline(always)]
-    fn on_open(&mut self, _: Handshake) -> Result<()> {
+    fn on_open(&mut self, _: Handshake) -> ws::Result<()> {
         CONNECTED_CLIENTS.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
 
     #[inline]
-    fn on_message(&mut self, message: WsMessage) -> Result<()> {
+    fn on_message(&mut self, message: WsMessage) -> ws::Result<()> {
         let message = match message {
             WsMessage::Text(s) => s,
             _ => return Ok(()),

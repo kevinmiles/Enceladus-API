@@ -4,13 +4,13 @@
 
 mod scope;
 
+use derive_builder::*;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use reqwest::{header::USER_AGENT, Client, Url, UrlError};
 pub use scope::Scope;
 use serde::Deserialize;
 use std::time::{Duration, SystemTime};
-use derive_builder::*;
 
 lazy_static! {
     static ref CLIENT: Client = Client::builder().gzip(true).build().unwrap();

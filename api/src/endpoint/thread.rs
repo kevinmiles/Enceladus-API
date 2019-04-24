@@ -86,7 +86,7 @@ pub fn patch(
         .update_on_reddit(&conn)
         .unwrap();
 
-    return json_result!(Thread::update(&conn, id, &data));
+    json_result!(Thread::update(&conn, id, &data))
 }
 
 /// Approve a `Thread` on Reddit.
@@ -95,23 +95,10 @@ pub fn patch(
 #[inline]
 #[patch("/<id>/approve")]
 pub fn approve(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
-    let thread = {
-        let thread = Thread::find_id(&conn, id);
-
-        // The thread doesn't exist.
-        if thread.is_err() {
-            return Err(Status::NotFound);
-        }
-
-        let thread = thread.unwrap();
-
-        // The thread doesn't exist on Reddit,
-        // so we're unable to do anything here.
-        if thread.post_id.is_none() {
-            return Err(Status::PreconditionFailed);
-        }
-
-        thread
+    let thread = match Thread::find_id(&conn, id) {
+        Ok(thread) if thread.post_id.is_some() => thread,
+        Ok(_) => return Err(Status::PreconditionFailed),
+        Err(_) => return Err(Status::NotFound),
     };
 
     if !user.is_moderator_of(thread.subreddit.as_ref().map(String::as_str)) {
@@ -150,23 +137,10 @@ pub fn unsticky(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
 /// aside from potentially updating a `User`'s access token.
 #[inline]
 fn set_sticky(conn: DataDB, user: User, id: i32, state: bool) -> RocketResult<Json<()>> {
-    let thread = {
-        let thread = Thread::find_id(&conn, id);
-
-        // The thread doesn't exist.
-        if thread.is_err() {
-            return Err(Status::NotFound);
-        }
-
-        let thread = thread.unwrap();
-
-        // The thread doesn't exist on Reddit,
-        // so we're unable to do anything here.
-        if thread.post_id.is_none() {
-            return Err(Status::PreconditionFailed);
-        }
-
-        thread
+    let thread = match Thread::find_id(&conn, id) {
+        Ok(thread) if thread.post_id.is_some() => thread,
+        Ok(_) => return Err(Status::PreconditionFailed),
+        Err(_) => return Err(Status::NotFound),
     };
 
     if !user.is_moderator_of(thread.subreddit.as_ref().map(String::as_str)) {
@@ -187,8 +161,8 @@ fn set_sticky(conn: DataDB, user: User, id: i32, state: bool) -> RocketResult<Js
 #[delete("/<id>")]
 pub fn delete(conn: DataDB, user: User, id: i32) -> RocketResult<Status> {
     if user.can_modify_thread(&conn, id) {
-        return no_content!(Thread::delete(&conn, id));
+        no_content!(Thread::delete(&conn, id))
+    } else {
+        Err(Status::Unauthorized)
     }
-
-    Err(Status::Unauthorized)
 }

@@ -1,23 +1,24 @@
+#[cfg(test)]
+use crate::guid;
 use crate::{
     controller::{Claim, InsertUser, User},
     encryption::encrypt,
-    guid,
     DataDB,
 };
 use lazy_static::lazy_static;
 use reddit::Reddit;
 use request::Url;
 use reqwest as request;
+#[cfg(test)]
+use rocket::uri;
 use rocket::{
     get,
     http::{Cookie, Cookies, RawStr},
     response::Redirect,
-    uri,
 };
-use std::{
-    error::Error,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
+#[cfg(test)]
+use std::time::{Duration, SystemTime};
+use std::{error::Error, time::UNIX_EPOCH};
 
 lazy_static! {
     pub static ref REDDIT: Reddit<'static> = Reddit::builder()
@@ -78,18 +79,18 @@ pub fn oauth(
         return Ok(Redirect::to(callback.to_string()));
     }
 
-    if cfg!(test) {
-        // We're testing; let's not bother with actual authentication.
-        // Instead, pretend it succeeded and immediately redirect to the callback.
-        Ok(Redirect::to(uri!(
-            "/oauth",
-            callback: code = guid(),
-            state = &callback
-        )))
-    } else {
-        // Send the user off to Reddit for authentication
-        Ok(Redirect::to(REDDIT.get_auth_url(&callback)?))
-    }
+    // We're testing; let's not bother with actual authentication.
+    // Instead, pretend it succeeded and immediately redirect to the callback.
+    #[cfg(test)]
+    return Ok(Redirect::to(uri!(
+        "/oauth",
+        callback: code = guid(),
+        state = &callback
+    )));
+
+    // Send the user off to Reddit for authentication
+    #[cfg(not(test))]
+    Ok(Redirect::to(REDDIT.get_auth_url(&callback)?))
 }
 
 /// Handle the OAuth response from Reddit.
@@ -113,6 +114,7 @@ pub fn oauth(
 /// these fields must be managed manually,
 /// typically by contacting the database operator.
 #[inline]
+#[cfg_attr(test, allow(unused_variables))]
 #[get("/callback?<code>&<state>")]
 pub fn callback(
     conn: DataDB,
@@ -124,7 +126,8 @@ pub fn callback(
     let lang;
     let username;
 
-    if cfg!(test) {
+    #[cfg(test)]
+    {
         reddit_user = reddit::User::builder()
             .reddit_instance(&REDDIT)
             .refresh_token(guid())
@@ -134,7 +137,9 @@ pub fn callback(
             .unwrap();
         lang = guid()[0..2].to_owned();
         username = guid();
-    } else {
+    }
+    #[cfg(not(test))]
+    {
         reddit_user = REDDIT.obtain_refresh_token(&code)?;
         username = reddit_user.username()?;
         lang = reddit_user.lang()?;
