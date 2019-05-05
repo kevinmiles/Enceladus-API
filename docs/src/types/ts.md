@@ -15,7 +15,7 @@ type Section = {
   is_events_section: boolean;
   name: string;
   content: string;
-  lock_held_by_user_id: i32 | null;
+  lock_held_by_user_id: number | null;
   in_thread_id: number;
   lock_assigned_at_utc: number;
 };
@@ -27,13 +27,14 @@ type Thread = {
   post_id: string | null;
   subreddit: string | null;
   space__t0: number | null;
-  youtube_id: string | null;
+  video_url: string | null;
   spacex__api_id: string | null;
   created_by_user_id: number;
   sections_id: number[];
   events_id: number[];
   event_column_headers: string[];
   space__utc_col_index: number | null;
+  is_live: boolean;
 };
 
 type User = {
@@ -41,7 +42,7 @@ type User = {
   reddit_username: string;
   lang: string;
   is_global_admin: boolean;
-  spacex__is_admin: boolean;
+  spacex__is_host: boolean;
   spacex__is_mod: boolean;
   spacex__is_slack_member: boolean;
 };

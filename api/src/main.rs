@@ -1,12 +1,9 @@
 #![feature(
     async_await,
     await_macro,
-    const_str_as_bytes,
     custom_attribute,
     decl_macro,
-    futures_api,
-    proc_macro_hygiene,
-    bind_by_move_pattern_guards
+    proc_macro_hygiene
 )]
 #![deny(rust_2018_idioms, clippy::all)]
 #![warn(clippy::nursery)] // Don't deny, as there may be unknown bugs.

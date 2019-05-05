@@ -153,7 +153,7 @@ pub fn callback(
             lang: lang.to_owned(),
             refresh_token: encrypt(reddit_user.refresh_token().as_ref()),
             is_global_admin: false,
-            spacex__is_admin: false,
+            spacex__is_host: false,
             spacex__is_mod: false,
             spacex__is_slack_member: false,
             access_token: encrypt(reddit_user.access_token().as_ref()),

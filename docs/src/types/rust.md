@@ -28,13 +28,14 @@ struct Thread {
   post_id: Option<String>,
   subreddit: Option<String>,
   space__t0: Option<i64>,
-  youtube_id: Option<String>,
+  video_url: Option<String>,
   spacex__api_id: Option<String>,
   created_by_user_id: i32,
   sections_id: Vec<i32>,
   events_id: Vec<i32>,
   event_column_headers: Vec<String>,
   space__utc_col_index: Option<i16>,
+  is_live: bool,
 }
 
 struct User {
@@ -42,7 +43,7 @@ struct User {
   reddit_username: String,
   lang: String,
   is_global_admin: bool,
-  spacex__is_admin: bool,
+  spacex__is_host: bool,
   spacex__is_mod: bool,
   spacex__is_slack_member: bool,
 }

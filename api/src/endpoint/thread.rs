@@ -96,8 +96,13 @@ pub fn patch(
 #[patch("/<id>/approve")]
 pub fn approve(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
     let thread = match Thread::find_id(&conn, id) {
-        Ok(thread) if thread.post_id.is_some() => thread,
-        Ok(_) => return Err(Status::PreconditionFailed),
+        Ok(thread) => {
+            if thread.post_id.is_some() {
+                thread
+            } else {
+                return Err(Status::PreconditionFailed);
+            }
+        }
         Err(_) => return Err(Status::NotFound),
     };
 
@@ -138,8 +143,13 @@ pub fn unsticky(conn: DataDB, user: User, id: i32) -> RocketResult<Json<()>> {
 #[inline]
 fn set_sticky(conn: DataDB, user: User, id: i32, state: bool) -> RocketResult<Json<()>> {
     let thread = match Thread::find_id(&conn, id) {
-        Ok(thread) if thread.post_id.is_some() => thread,
-        Ok(_) => return Err(Status::PreconditionFailed),
+        Ok(thread) => {
+            if thread.post_id.is_some() {
+                thread
+            } else {
+                return Err(Status::PreconditionFailed);
+            }
+        }
         Err(_) => return Err(Status::NotFound),
     };
 

@@ -45,7 +45,7 @@ table! {
         lang -> Varchar,
         refresh_token -> Bytea,
         is_global_admin -> Bool,
-        spacex__is_admin -> Bool,
+        spacex__is_host -> Bool,
         spacex__is_mod -> Bool,
         spacex__is_slack_member -> Bool,
         access_token -> Bytea,

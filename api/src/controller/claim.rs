@@ -10,9 +10,8 @@ lazy_static! {
         validate_exp: false,
         ..jwt::Validation::default()
     };
+    static ref ROCKET_SECRET_KEY: &'static [u8] = dotenv!("ROCKET_SECRET_KEY").as_bytes();
 }
-
-const ROCKET_SECRET_KEY: &[u8] = dotenv!("ROCKET_SECRET_KEY").as_bytes();
 
 /// This represents the body ("claim") of the JWT used for authorization.
 /// The `user_id` matches with the ID of a `User` object in the database,
@@ -40,13 +39,13 @@ impl Claim {
     /// Convert the existing `struct` into a valid JWT.
     #[inline]
     pub fn encode(&self) -> Result<String, jsonwebtoken::errors::Error> {
-        jwt::encode(&HEADER, self, ROCKET_SECRET_KEY)
+        jwt::encode(&HEADER, self, &ROCKET_SECRET_KEY)
     }
 
     /// Obtain the `user_id` field of a JWT passed as a parameter.
     #[inline]
     pub fn get_user_id(token: &str) -> Result<i32, jsonwebtoken::errors::Error> {
-        Ok(jwt::decode::<Claim>(token, ROCKET_SECRET_KEY, &VALIDATION)?
+        Ok(jwt::decode::<Claim>(token, &ROCKET_SECRET_KEY, &VALIDATION)?
             .claims
             .user_id)
     }

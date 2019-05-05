@@ -1,8 +1,7 @@
 #![allow(non_snake_case)]
 
-use super::{Section, ToMarkdown, THREAD_CACHE_SIZE};
+use super::{Event, Section, ToMarkdown, User, THREAD_CACHE_SIZE};
 use crate::{
-    controller::User,
     schema::thread::{self, dsl::*},
     websocket::*,
     Database,
@@ -86,8 +85,6 @@ impl Thread {
     /// to preserve the tree structure of the result.
     #[inline]
     pub fn find_id_with_foreign_keys(conn: &Database, thread_id: i32) -> QueryResult<Json> {
-        use super::{Event, Section, User};
-
         // Get the values, represented as normal structs.
         // For sections, we also add the relation to `User`,
         // so we represent those as raw, untyped JSON values.

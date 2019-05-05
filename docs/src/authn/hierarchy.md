@@ -22,10 +22,10 @@ authentication levels are as follows.
   to ensure a user has the authority to make changes to a given
   entity.
 
-- Local admin
+- Subreddit host
 
-  The authenticated user is designated as an admin of the subreddit in question.
-  This designation is located in the `[SUBREDDIT]__is_admin` field on each user.
+  The authenticated user is designated as a host of the subreddit in question.
+  This designation is located in the `[SUBREDDIT]__is_host` field on each user.
   If the field does not exist,
   the value is assumed to be `false`.
   These users have the ability to add, edit, and remove sections and events

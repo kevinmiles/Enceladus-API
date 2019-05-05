@@ -55,7 +55,7 @@ pub struct TokenUser {
     reddit_username: String,
     lang: String,
     is_global_admin: bool,
-    spacex__is_admin: bool,
+    spacex__is_host: bool,
     spacex__is_mod: bool,
     spacex__is_slack_member: bool,
 }
@@ -74,7 +74,7 @@ impl From<User> for TokenUser {
             reddit_username: user.reddit_username,
             lang: user.lang,
             is_global_admin: user.is_global_admin,
-            spacex__is_admin: user.spacex__is_admin,
+            spacex__is_host: user.spacex__is_host,
             spacex__is_mod: user.spacex__is_mod,
             spacex__is_slack_member: user.spacex__is_slack_member,
         }

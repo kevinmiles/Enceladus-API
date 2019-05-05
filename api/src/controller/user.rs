@@ -45,7 +45,7 @@ generate_structs! {
         lang: String = "en",
         private refresh_token: Vec<u8>,
         is_global_admin: bool = false,
-        spacex__is_admin: bool = false,
+        spacex__is_host: bool = false,
         spacex__is_mod: bool = false,
         spacex__is_slack_member: bool = false,
         private access_token: Vec<u8>,
@@ -65,7 +65,7 @@ pub struct ExternalUpdateUser {
     pub lang: Option<String>,
     pub refresh_token: Option<String>,
     pub is_global_admin: Option<bool>,
-    pub spacex__is_admin: Option<bool>,
+    pub spacex__is_host: Option<bool>,
     pub spacex__is_mod: Option<bool>,
     pub spacex__is_slack_member: Option<bool>,
     pub access_token: Option<String>,
@@ -85,7 +85,7 @@ impl Into<UpdateUser> for Json<ExternalUpdateUser> {
             lang: self.lang.clone(),
             refresh_token: self.refresh_token.clone().map(|s| encrypt(&s)),
             is_global_admin: self.is_global_admin,
-            spacex__is_admin: self.spacex__is_admin,
+            spacex__is_host: self.spacex__is_host,
             spacex__is_mod: self.spacex__is_mod,
             spacex__is_slack_member: self.spacex__is_slack_member,
             access_token: self.access_token.clone().map(|s| encrypt(&s)),
@@ -122,7 +122,7 @@ pub struct ExternalInsertUser {
     #[serde(default = "falsey")]
     pub is_global_admin: bool,
     #[serde(default = "falsey")]
-    pub spacex__is_admin: bool,
+    pub spacex__is_host: bool,
     #[serde(default = "falsey")]
     pub spacex__is_mod: bool,
     #[serde(default = "falsey")]
@@ -145,7 +145,7 @@ impl Into<InsertUser> for Json<ExternalInsertUser> {
             lang: self.lang.clone(),
             refresh_token: encrypt(&self.refresh_token),
             is_global_admin: self.is_global_admin,
-            spacex__is_admin: self.spacex__is_admin,
+            spacex__is_host: self.spacex__is_host,
             spacex__is_mod: self.spacex__is_mod,
             spacex__is_slack_member: self.spacex__is_slack_member,
             access_token: encrypt(&self.access_token),
@@ -166,13 +166,13 @@ impl User {
         }
     }
 
-    /// Check if the user is an admin of a given subreddit.
+    /// Check if the user is a host of a given subreddit.
     ///
     /// If the subreddit is not known, returns `false`.
     #[inline]
-    pub fn is_admin_of(&self, subreddit: Option<&str>) -> bool {
+    pub fn is_host_for(&self, subreddit: Option<&str>) -> bool {
         match subreddit {
-            Some("spacex") => self.spacex__is_admin,
+            Some("spacex") => self.spacex__is_host,
             _ => false,
         }
     }
@@ -185,7 +185,7 @@ impl User {
     /// - None
     /// - Logged in (everyday user)
     /// - Thread author
-    /// - Subreddit admin
+    /// - Subreddit host
     /// - Global admin
     ///
     /// This function verifies that a user is, at a minimum, the thread author.
@@ -207,8 +207,8 @@ impl User {
             thread.unwrap()
         };
 
-        // The user is a local admin.
-        if self.is_admin_of(thread.subreddit.as_ref().map(String::as_str)) {
+        // The user is a host in a given subreddit.
+        if self.is_host_for(thread.subreddit.as_ref().map(String::as_str)) {
             return true;
         }
 

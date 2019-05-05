@@ -70,10 +70,8 @@ fn append_log(includes_timestamp: IncludesTimestamp, message: impl Into<Vec<u8>>
 
 #[inline]
 pub fn spawn() {
-    tokio::run_async(
-        async {
-            tokio::spawn_async(log_requests());
-            tokio::spawn_async(log_ws_clients());
-        },
-    );
+    tokio::run_async(async {
+        tokio::spawn_async(log_requests());
+        tokio::spawn_async(log_ws_clients());
+    });
 }

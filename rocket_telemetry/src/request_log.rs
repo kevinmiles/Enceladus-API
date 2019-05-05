@@ -23,7 +23,7 @@ impl Display for RequestLogEntry {
             timestamp = DateTime::<Utc>::from(self.start_time).format("%Y%m%dT%H%M%SZ"),
             // This lets us get the fractional value as well,
             // without having to cast a u128 to a float and then divide.
-            duration = self.duration.div_duration(Duration::from_millis(1)),
+            duration = self.duration.div_duration_f32(Duration::from_millis(1)),
             bytes = self.body_size,
             status = self.status.code,
             method = self.method,
